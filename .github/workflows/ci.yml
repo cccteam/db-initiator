@@ -1,0 +1,28 @@
+name: CI
+on:
+  pull_request:
+    types: [opened, synchronize, reopened] # these are the defaults - synchronize means 'commits pushed to PR'
+
+env:
+  GO_VERSION: "1.22.2"
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  env-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      go_version: ${{ steps.set_output.outputs.go_version }}
+    steps:
+      - name: Set GO_VERSION Output
+        id: set_output
+        run: echo "go_version=${{ env.GO_VERSION }}" >> $GITHUB_OUTPUT
+
+  golang-ci:
+    needs: env-setup
+    uses: cccteam/github-workflows/.github/workflows/golang-ci.yml@v2.0.2
+    with:
+      go-version: ${{ needs.env-setup.outputs.go_version }}
+      build-tags: '[""]'
