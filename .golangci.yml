@@ -165,11 +165,6 @@ issues:
         - lll
         - bodyclose
 
-    - path: errors\.go
-      linters:
-        - errorlint
-        - gochecknoinits
-
   include:
     - EXC0002
     - EXC0005
