@@ -21,13 +21,13 @@ import (
 )
 
 const (
-	defaultPort       = "9010/tcp"
-	defaultProjectID  = "unit-testing"
-	defaultInstanceID = "test-instance"
+	defaultSpannerPort       = "9010/tcp"
+	defaultSpannerProjectID  = "unit-testing"
+	defaultSpannerInstanceID = "test-instance"
 )
 
-// Container represents a docker container running a spanner instance.
-type Container struct {
+// SpannerContainer represents a docker container running a spanner instance.
+type SpannerContainer struct {
 	testcontainers.Container
 	admin      *database.DatabaseAdminClient
 	opts       []option.ClientOption
@@ -39,15 +39,15 @@ type Container struct {
 	dbCount int
 }
 
-// NewContainer returns a initialized SpannerContainer ready to run to create databases for unit tests
-func NewContainer(ctx context.Context) (*Container, error) {
+// NewSpannerContainer returns a initialized SpannerContainer ready to run to create databases for unit tests
+func NewSpannerContainer(ctx context.Context) (*SpannerContainer, error) {
 	container, err := testcontainers.GenericContainer(ctx,
 		testcontainers.GenericContainerRequest{
 			Started: true,
 			ContainerRequest: testcontainers.ContainerRequest{
 				Image:        "gcr.io/cloud-spanner-emulator/emulator:latest",
 				WaitingFor:   wait.ForLog("Cloud Spanner emulator running"),
-				ExposedPorts: []string{defaultPort},
+				ExposedPorts: []string{defaultSpannerPort},
 			},
 		},
 	)
@@ -60,9 +60,9 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		return nil, errors.Wrap(err, "failed to get host for container")
 	}
 
-	externalPort, err := container.MappedPort(ctx, nat.Port(defaultPort))
+	externalPort, err := container.MappedPort(ctx, nat.Port(defaultSpannerPort))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get external port for exposed port %s", defaultPort)
+		return nil, errors.Wrapf(err, "failed to get external port for exposed port %s", defaultSpannerPort)
 	}
 
 	endPoint := fmt.Sprintf("%s:%s", host, externalPort.Port())
@@ -74,7 +74,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		internaloption.SkipDialSettingsValidation(),
 	}
 
-	if err := NewInstance(ctx, defaultProjectID, defaultInstanceID, opts...); err != nil {
+	if err := NewSpannerInstance(ctx, defaultSpannerProjectID, defaultSpannerInstanceID, opts...); err != nil {
 		return nil, errors.Wrap(err, "failed to create spanner instance")
 	}
 
@@ -83,21 +83,21 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		return nil, errors.Wrap(err, "database.NewDatabaseAdminClient()")
 	}
 
-	return &Container{
+	return &SpannerContainer{
 		Container:  container,
 		admin:      admin,
 		opts:       opts,
-		port:       defaultPort,
-		projectID:  defaultProjectID,
-		instanceID: defaultInstanceID,
+		port:       defaultSpannerPort,
+		projectID:  defaultSpannerProjectID,
+		instanceID: defaultSpannerInstanceID,
 	}, nil
 }
 
 // CreateTestDatabase creates a database with dbName. Each test should create their own database for testing
-func (sp *Container) CreateTestDatabase(ctx context.Context, dbName string) (*DB, error) {
+func (sp *SpannerContainer) CreateTestDatabase(ctx context.Context, dbName string) (*SpannerDB, error) {
 	dbName = sp.validDatabaseName(dbName)
 
-	db, err := newDatabase(ctx, sp.admin, sp.projectID, sp.instanceID, dbName, sp.opts...)
+	db, err := newSpannerDatabase(ctx, sp.admin, sp.projectID, sp.instanceID, dbName, sp.opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create spanner database %s", dbName)
 	}
@@ -106,7 +106,7 @@ func (sp *Container) CreateTestDatabase(ctx context.Context, dbName string) (*DB
 }
 
 // Close cleans up open resouces
-func (sp *Container) Close() error {
+func (sp *SpannerContainer) Close() error {
 	if err := sp.admin.Close(); err != nil {
 		return errors.Wrap(err, "database.DatabaseAdminClient.Close()")
 	}
@@ -114,7 +114,7 @@ func (sp *Container) Close() error {
 	return nil
 }
 
-func (sp *Container) validDatabaseName(dbName string) string {
+func (sp *SpannerContainer) validDatabaseName(dbName string) string {
 	b := []byte(dbName)
 	b = bytes.ToLower(b)
 

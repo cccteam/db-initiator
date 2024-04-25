@@ -14,7 +14,7 @@ func TestClient_FullMigration(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	container, err := NewContainer(ctx)
+	container, err := NewSpannerContainer(ctx)
 	if err != nil {
 		t.Fatalf("New(): %s", err)
 	}
@@ -104,7 +104,7 @@ func TestClient_FullMigration(t *testing.T) {
 	}
 }
 
-func TestNew(t *testing.T) {
+func TestNewSpannerContainer(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -138,7 +138,7 @@ func TestNew(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			container, err := NewContainer(tt.args.ctx)
+			container, err := NewSpannerContainer(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -218,7 +218,7 @@ func TestContainer_validDatabaseName(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			sp := &Container{}
+			sp := &SpannerContainer{}
 			if got := sp.validDatabaseName(tt.args.dbName); got != tt.want {
 				t.Errorf("Container.validDatabaseName() = %v, want %v", got, tt.want)
 			}
