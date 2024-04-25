@@ -218,7 +218,7 @@ func TestContainer_validDatabaseName(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			sp := &Container{}
+			sp := &SpannerContainer{}
 			if got := sp.validDatabaseName(tt.args.dbName); got != tt.want {
 				t.Errorf("Container.validDatabaseName() = %v, want %v", got, tt.want)
 			}

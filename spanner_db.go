@@ -16,8 +16,8 @@ import (
 	"google.golang.org/api/option"
 )
 
-// DB represents a database created and ready for migrations
-type DB struct {
+// SpannerDB represents a database created and ready for migrations
+type SpannerDB struct {
 	dbStr      string
 	admin      *database.DatabaseAdminClient
 	closeAdmin bool
@@ -25,7 +25,7 @@ type DB struct {
 }
 
 // NewSpannerDatabase will create a spanner database
-func NewSpannerDatabase(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*DB, error) {
+func NewSpannerDatabase(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerDB, error) {
 	adminClient, err := database.NewDatabaseAdminClient(ctx, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "database.NewDatabaseAdminClient()")
@@ -43,7 +43,7 @@ func NewSpannerDatabase(ctx context.Context, projectID, instanceID, dbName strin
 	return db, nil
 }
 
-func newSpannerDatabase(ctx context.Context, adminClient *database.DatabaseAdminClient, projectID, instanceID, dbName string, opts ...option.ClientOption) (*DB, error) {
+func newSpannerDatabase(ctx context.Context, adminClient *database.DatabaseAdminClient, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerDB, error) {
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
 	client, err := spanner.NewClient(ctx, dbStr, opts...)
 	if err != nil {
@@ -64,7 +64,7 @@ func newSpannerDatabase(ctx context.Context, adminClient *database.DatabaseAdmin
 		return nil, errors.Wrapf(err, "database.CreateDatabaseOperation.Wait()")
 	}
 
-	return &DB{
+	return &SpannerDB{
 		dbStr:  dbStr,
 		admin:  adminClient,
 		Client: client,
@@ -72,7 +72,7 @@ func newSpannerDatabase(ctx context.Context, adminClient *database.DatabaseAdmin
 }
 
 // MigrateUp will migrate all the way up, applying all up migrations from all sourceURL's
-func (db *DB) MigrateUp(sourceURL ...string) error {
+func (db *SpannerDB) MigrateUp(sourceURL ...string) error {
 	conf := &spannerDriver.Config{DatabaseName: db.dbStr, CleanStatements: true, DoNotCloseSpannerClients: true}
 	spannerInstance, err := spannerDriver.WithInstance(spannerDriver.NewDB(*db.admin, *db.Client), conf)
 	if err != nil {
@@ -88,7 +88,7 @@ func (db *DB) MigrateUp(sourceURL ...string) error {
 	return nil
 }
 
-func (db *DB) migrateUp(source string, spannerInstance migratedb.Driver) error {
+func (db *SpannerDB) migrateUp(source string, spannerInstance migratedb.Driver) error {
 	m, err := migrate.NewWithDatabaseInstance(source, "spanner", spannerInstance)
 	if err != nil {
 		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", source, db.dbStr)
@@ -115,7 +115,7 @@ func (db *DB) migrateUp(source string, spannerInstance migratedb.Driver) error {
 }
 
 // MigrateDown will migrate all the way down
-func (db *DB) MigrateDown(sourceURL string) error {
+func (db *SpannerDB) MigrateDown(sourceURL string) error {
 	conf := &spannerDriver.Config{DatabaseName: db.dbStr, CleanStatements: true, DoNotCloseSpannerClients: true}
 	spannerInstance, err := spannerDriver.WithInstance(spannerDriver.NewDB(*db.admin, *db.Client), conf)
 	if err != nil {
@@ -141,7 +141,7 @@ func (db *DB) MigrateDown(sourceURL string) error {
 	return nil
 }
 
-func (db *DB) DropDatabase(ctx context.Context) error {
+func (db *SpannerDB) DropDatabase(ctx context.Context) error {
 	if err := db.admin.DropDatabase(ctx, &databasepb.DropDatabaseRequest{Database: db.dbStr}); err != nil {
 		return errors.Wrap(err, "database.DatabaseAdminClient.DropDatabase()")
 	}
@@ -149,7 +149,7 @@ func (db *DB) DropDatabase(ctx context.Context) error {
 	return nil
 }
 
-func (db *DB) Close() error {
+func (db *SpannerDB) Close() error {
 	db.Client.Close()
 
 	if db.closeAdmin {
