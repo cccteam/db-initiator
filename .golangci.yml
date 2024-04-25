@@ -7,12 +7,6 @@ linters-settings:
         files:
           - $all
         allow:
-          - github.com/cccteam/logger
-          - github.com/go-chi/chi/v5
-          - github.com/go-playground/errors/v5
-          - github.com/gofrs/uuid
-          - github.com/google/go-cmp/cmp
-          - go.uber.org/mock/gomock
           - $gostd
   dupl:
     threshold: 100
