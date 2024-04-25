@@ -39,8 +39,8 @@ type Container struct {
 	dbCount int
 }
 
-// NewContainer returns a initialized SpannerContainer ready to run to create databases for unit tests
-func NewContainer(ctx context.Context) (*Container, error) {
+// NewSpannerContainer returns a initialized SpannerContainer ready to run to create databases for unit tests
+func NewSpannerContainer(ctx context.Context) (*Container, error) {
 	container, err := testcontainers.GenericContainer(ctx,
 		testcontainers.GenericContainerRequest{
 			Started: true,
@@ -74,7 +74,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 		internaloption.SkipDialSettingsValidation(),
 	}
 
-	if err := NewInstance(ctx, defaultProjectID, defaultInstanceID, opts...); err != nil {
+	if err := NewSpannerInstance(ctx, defaultProjectID, defaultInstanceID, opts...); err != nil {
 		return nil, errors.Wrap(err, "failed to create spanner instance")
 	}
 
@@ -97,7 +97,7 @@ func NewContainer(ctx context.Context) (*Container, error) {
 func (sp *Container) CreateTestDatabase(ctx context.Context, dbName string) (*DB, error) {
 	dbName = sp.validDatabaseName(dbName)
 
-	db, err := newDatabase(ctx, sp.admin, sp.projectID, sp.instanceID, dbName, sp.opts...)
+	db, err := newSpannerDatabase(ctx, sp.admin, sp.projectID, sp.instanceID, dbName, sp.opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create spanner database %s", dbName)
 	}

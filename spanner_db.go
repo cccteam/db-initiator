@@ -24,14 +24,14 @@ type DB struct {
 	*spanner.Client
 }
 
-// NewDatabase will create a spanner database
-func NewDatabase(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*DB, error) {
+// NewSpannerDatabase will create a spanner database
+func NewSpannerDatabase(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*DB, error) {
 	adminClient, err := database.NewDatabaseAdminClient(ctx, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "database.NewDatabaseAdminClient()")
 	}
 
-	db, err := newDatabase(ctx, adminClient, projectID, instanceID, dbName, opts...)
+	db, err := newSpannerDatabase(ctx, adminClient, projectID, instanceID, dbName, opts...)
 	if err != nil {
 		adminClient.Close()
 
@@ -43,7 +43,7 @@ func NewDatabase(ctx context.Context, projectID, instanceID, dbName string, opts
 	return db, nil
 }
 
-func newDatabase(ctx context.Context, adminClient *database.DatabaseAdminClient, projectID, instanceID, dbName string, opts ...option.ClientOption) (*DB, error) {
+func newSpannerDatabase(ctx context.Context, adminClient *database.DatabaseAdminClient, projectID, instanceID, dbName string, opts ...option.ClientOption) (*DB, error) {
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
 	client, err := spanner.NewClient(ctx, dbStr, opts...)
 	if err != nil {
@@ -161,8 +161,8 @@ func (db *DB) Close() error {
 	return nil
 }
 
-// NewInstance creates a spanner instance. This is intended for use with a spanner emulator.
-func NewInstance(ctx context.Context, projectID, instanceID string, opts ...option.ClientOption) error {
+// NewSpannerInstance creates a spanner instance. This is intended for use with a spanner emulator.
+func NewSpannerInstance(ctx context.Context, projectID, instanceID string, opts ...option.ClientOption) error {
 	instanceAdmin, err := instance.NewInstanceAdminClient(ctx, opts...)
 	if err != nil {
 		return errors.Wrap(err, "instanceadmin.NewInstanceAdminClient()")
