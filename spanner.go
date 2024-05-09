@@ -1,5 +1,5 @@
 // Implements tooling to setup a Spanner database configured for running integration tests against.
-package dbinitializer
+package dbinitiator
 
 import (
 	"bytes"
