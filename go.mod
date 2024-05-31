@@ -2,7 +2,7 @@ module github.com/cccteam/db-initiator
 
 go 1.22.3
 
-replace github.com/golang-migrate/migrate/v4 v4.17.1 => github.com/jtwatson/migrate/v4 v4.17.1-beta.0
+replace github.com/golang-migrate/migrate/v4 v4.17.1 => github.com/jtwatson/migrate/v4 v4.17.2-beta.0
 
 require (
 	cloud.google.com/go/spanner v1.61.0

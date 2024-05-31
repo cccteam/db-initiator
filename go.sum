@@ -872,8 +872,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
-github.com/jtwatson/migrate/v4 v4.17.1-beta.0 h1:l5Zo4p7hk0Q0ZHAX0DoZ3wImkjO1dGwWrrtrEXfo91U=
-github.com/jtwatson/migrate/v4 v4.17.1-beta.0/go.mod h1:Ykxulp/kmhYvFR9j1LQy8D+gKXUxRaMKvpTC/SOdlyo=
+github.com/jtwatson/migrate/v4 v4.17.2-beta.0 h1:Cz53WNEn8bR5l9ZBPBHnsbTvUU9t1p4Rb+oJvYjVf/A=
+github.com/jtwatson/migrate/v4 v4.17.2-beta.0/go.mod h1:JoPOmXWDpIshXi0N1qQ09HrYS1mDWYSPIreE/hzul2g=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51/go.mod h1:CzGEWj7cYgsdH8dAjBGEr58BoE7ScuLd+fwFZ44+/x8=
