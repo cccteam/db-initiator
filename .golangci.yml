@@ -8,6 +8,13 @@ linters-settings:
           - $all
         allow:
           - $gostd
+          - cloud.google.com/go/spanner
+          - github.com/docker/go-connections
+          - github.com/go-playground/errors/v5
+          - github.com/golang-migrate/migrate/v4
+          - github.com/testcontainers/testcontainers-go
+          - google.golang.org/api
+          - google.golang.org/grpc
   dupl:
     threshold: 100
   funlen:
