@@ -40,12 +40,12 @@ type SpannerContainer struct {
 }
 
 // NewSpannerContainer returns a initialized SpannerContainer ready to run to create databases for unit tests
-func NewSpannerContainer(ctx context.Context) (*SpannerContainer, error) {
+func NewSpannerContainer(ctx context.Context, imageVersion string) (*SpannerContainer, error) {
 	container, err := testcontainers.GenericContainer(ctx,
 		testcontainers.GenericContainerRequest{
 			Started: true,
 			ContainerRequest: testcontainers.ContainerRequest{
-				Image:        "gcr.io/cloud-spanner-emulator/emulator:latest",
+				Image:        "gcr.io/cloud-spanner-emulator/emulator:" + imageVersion,
 				WaitingFor:   wait.ForLog("Cloud Spanner emulator running"),
 				ExposedPorts: []string{defaultSpannerPort},
 			},

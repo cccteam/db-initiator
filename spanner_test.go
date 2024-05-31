@@ -14,7 +14,7 @@ func TestClient_FullMigration(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	container, err := NewSpannerContainer(ctx)
+	container, err := NewSpannerContainer(ctx, "latest")
 	if err != nil {
 		t.Fatalf("New(): %s", err)
 	}
@@ -138,7 +138,7 @@ func TestNewSpannerContainer(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			container, err := NewSpannerContainer(tt.args.ctx)
+			container, err := NewSpannerContainer(tt.args.ctx, "latest")
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
