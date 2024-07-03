@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/cccteam/db-initiator/compare/v0.1.0...v0.1.1) (2024-07-03)
+
+
+### Code Upgrade
+
+* Update Go version to 1.22.5 to address GO-2024-2963 ([#23](https://github.com/cccteam/db-initiator/issues/23)) ([14b2b44](https://github.com/cccteam/db-initiator/commit/14b2b442f1083c9e2a1aa32148943e60d2a84ae6))
+* Update workflows to latest version ([#18](https://github.com/cccteam/db-initiator/issues/18)) ([9916ab4](https://github.com/cccteam/db-initiator/commit/9916ab4f7c3e028b1574a208fba0ad8c3bd23d1f))
+
 ## 0.1.0 (2024-06-18)
 
 
