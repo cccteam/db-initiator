@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/cccteam/db-initiator/compare/v0.1.1...v0.1.2) (2024-08-25)
+
+
+### Features
+
+* Added support for PostgreSQL. ([#9](https://github.com/cccteam/db-initiator/issues/9)) ([013fa74](https://github.com/cccteam/db-initiator/commit/013fa7434295b939352a75c8e78b314e55059625))
+
 ## [0.1.1](https://github.com/cccteam/db-initiator/compare/v0.1.0...v0.1.1) (2024-07-03)
 
 
