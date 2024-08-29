@@ -92,8 +92,8 @@ func NewSpannerContainer(ctx context.Context, imageVersion string) (*SpannerCont
 	}, nil
 }
 
-// CreateTestDatabase creates a database with dbName. Each test should create their own database for testing
-func (sc *SpannerContainer) CreateTestDatabase(ctx context.Context, dbName string) (*SpannerDB, error) {
+// CreateDatabase creates a database with dbName. Each test should create their own database for testing
+func (sc *SpannerContainer) CreateDatabase(ctx context.Context, dbName string) (*SpannerDB, error) {
 	dbName = sc.validDatabaseName(dbName)
 
 	db, err := newSpannerDatabase(ctx, sc.admin, sc.projectID, sc.instanceID, dbName, sc.opts...)

@@ -74,7 +74,7 @@ func TestSpanner_FullMigration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			db, err := container.CreateTestDatabase(ctx, tt.name)
+			db, err := container.CreateDatabase(ctx, tt.name)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("SpannerContainer.CreateTestDatabase() error = %v, wantErr %v", err, tt.wantErr)
 			}
