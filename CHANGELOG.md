@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/cccteam/db-initiator/compare/v0.1.2...v0.2.0) (2024-08-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* Changed the method name on `SpannerContainer` from `CreateTestDatabase()` to `CreateDatabase()`
+
+### Code Refactoring
+
+* Changed the method name on `SpannerContainer` from `CreateTestDatabase()` to `CreateDatabase()` ([16404cd](https://github.com/cccteam/db-initiator/commit/16404cd4d40ab1c1fe4ecd757bba7c278e64627e))
+* Rename SpannerContainer methods to be consistent with PostgresContainer (32) ([16404cd](https://github.com/cccteam/db-initiator/commit/16404cd4d40ab1c1fe4ecd757bba7c278e64627e))
+
 ## [0.1.2](https://github.com/cccteam/db-initiator/compare/v0.1.1...v0.1.2) (2024-08-25)
 
 
