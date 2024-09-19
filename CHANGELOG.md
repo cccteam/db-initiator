@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/cccteam/db-initiator/compare/v0.2.0...v0.2.1) (2024-09-19)
+
+
+### Dependencies
+
+* Update Dependencies ([#35](https://github.com/cccteam/db-initiator/issues/35)) ([317628b](https://github.com/cccteam/db-initiator/commit/317628bf467fa5a108e66b3a86085d83b35baf9f))
+
 ## [0.2.0](https://github.com/cccteam/db-initiator/compare/v0.1.2...v0.2.0) (2024-08-29)
 
 
