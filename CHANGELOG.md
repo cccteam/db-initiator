@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/cccteam/db-initiator/compare/v0.2.1...v0.2.2) (2024-11-01)
+
+
+### Features
+
+* Add passthrough protocol to emulator endpoint ([#42](https://github.com/cccteam/db-initiator/issues/42)) ([f818646](https://github.com/cccteam/db-initiator/commit/f818646cbf5447f7c78c53258ba218f7c43c954c))
+
 ## [0.2.1](https://github.com/cccteam/db-initiator/compare/v0.2.0...v0.2.1) (2024-09-19)
 
 
