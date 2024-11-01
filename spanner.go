@@ -64,7 +64,7 @@ func NewSpannerContainer(ctx context.Context, imageVersion string) (*SpannerCont
 		return nil, errors.Wrapf(err, "failed to get external port for exposed port %s", defaultSpannerPort)
 	}
 
-	endPoint := fmt.Sprintf("%s:%s", host, externalPort.Port())
+	endPoint := fmt.Sprintf("passthrough:///%s:%s", host, externalPort.Port())
 
 	opts := []option.ClientOption{
 		option.WithEndpoint(endPoint),
