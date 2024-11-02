@@ -45,9 +45,9 @@ func NewSpannerDatabase(ctx context.Context, projectID, instanceID, dbName strin
 
 func newSpannerDatabase(ctx context.Context, adminClient *spannerDB.DatabaseAdminClient, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerDB, error) {
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
-	client, err := spanner.NewClient(ctx, dbStr, opts...)
+	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{SessionPoolConfig: spanner.DefaultSessionPoolConfig, DisableNativeMetrics: true}, opts...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "spanner.NewClient()")
+		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
 	}
 
 	op, err := adminClient.CreateDatabase(ctx,
