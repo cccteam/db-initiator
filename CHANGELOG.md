@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/cccteam/db-initiator/compare/v0.2.2...v0.2.3) (2024-11-02)
+
+
+### Bug Fixes
+
+* Fix breaking change in spanner package when connecting to emulator ([#44](https://github.com/cccteam/db-initiator/issues/44)) ([7b86084](https://github.com/cccteam/db-initiator/commit/7b860844b33699ecaea413aa86af249015e37167))
+
 ## [0.2.2](https://github.com/cccteam/db-initiator/compare/v0.2.1...v0.2.2) (2024-11-01)
 
 
