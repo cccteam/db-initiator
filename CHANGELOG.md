@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/cccteam/db-initiator/compare/v0.2.3...v0.2.4) (2024-12-05)
+
+
+### Features
+
+* Upgrade mograte fork ([#48](https://github.com/cccteam/db-initiator/issues/48)) ([cacf36f](https://github.com/cccteam/db-initiator/commit/cacf36f663b4a0deba9cba03944d00f242eb85c7))
+
 ## [0.2.3](https://github.com/cccteam/db-initiator/compare/v0.2.2...v0.2.3) (2024-11-02)
 
 
