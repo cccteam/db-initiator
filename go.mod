@@ -2,7 +2,7 @@ module github.com/cccteam/db-initiator
 
 go 1.23.1
 
-replace github.com/golang-migrate/migrate/v4 v4.18.1 => github.com/jtwatson/migrate/v4 v4.18.2-beta.0
+replace github.com/golang-migrate/migrate/v4 v4.18.1 => github.com/jtwatson/migrate/v4 v4.18.2-beta.2
 
 require (
 	cloud.google.com/go/spanner v1.71.0
@@ -34,6 +34,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/cloudspannerecosystem/memefish v0.0.0-20241126143851-bb8d10117087 // indirect
 	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect

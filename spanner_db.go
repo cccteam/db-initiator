@@ -73,7 +73,7 @@ func newSpannerDatabase(ctx context.Context, adminClient *spannerDB.DatabaseAdmi
 
 // MigrateUp will migrate all the way up, applying all up migrations from all sourceURL's
 func (db *SpannerDB) MigrateUp(sourceURL ...string) error {
-	conf := &spannerDriver.Config{DatabaseName: db.dbStr, CleanStatements: true, DoNotCloseSpannerClients: true}
+	conf := &spannerDriver.Config{DatabaseName: db.dbStr, CleanStatements: true}
 	spannerInstance, err := spannerDriver.WithInstance(spannerDriver.NewDB(*db.admin, *db.Client), conf)
 	if err != nil {
 		return errors.Wrap(err, "spannerDriver.WithInstance()")
@@ -116,7 +116,7 @@ func (db *SpannerDB) migrateUp(source string, spannerInstance migratedb.Driver) 
 
 // MigrateDown will migrate all the way down
 func (db *SpannerDB) MigrateDown(sourceURL string) error {
-	conf := &spannerDriver.Config{DatabaseName: db.dbStr, CleanStatements: true, DoNotCloseSpannerClients: true}
+	conf := &spannerDriver.Config{DatabaseName: db.dbStr, CleanStatements: true}
 	spannerInstance, err := spannerDriver.WithInstance(spannerDriver.NewDB(*db.admin, *db.Client), conf)
 	if err != nil {
 		return errors.Wrap(err, "spannerDriver.WithInstance()")
