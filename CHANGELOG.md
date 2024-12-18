@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/cccteam/db-initiator/compare/v0.2.4...v0.2.5) (2024-12-18)
+
+
+### Code Upgrade
+
+* Upgraded to go 1.23.4 and upgraded packages to latest. ([#52](https://github.com/cccteam/db-initiator/issues/52)) ([80affcf](https://github.com/cccteam/db-initiator/commit/80affcf24b5fc945e21f17d36d203e5ee85dfe62))
+
 ## [0.2.4](https://github.com/cccteam/db-initiator/compare/v0.2.3...v0.2.4) (2024-12-05)
 
 
