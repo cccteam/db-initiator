@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.5](https://github.com/cccteam/db-initiator/compare/v0.2.4...v0.2.5) (2025-01-31)
+
+
+### Dependencies
+
+* Upgrade x/net to 0.33.0 ([#54](https://github.com/cccteam/db-initiator/issues/54)) ([b8639b8](https://github.com/cccteam/db-initiator/commit/b8639b8e506832c5484cdd849e732fb912d20dc9))
+
+
+### Code Upgrade
+
+* Go version from `1.23.4` to `1.23.5` ([#56](https://github.com/cccteam/db-initiator/issues/56)) ([ab09447](https://github.com/cccteam/db-initiator/commit/ab0944785c3b012a19e555558df261942530ff01))
+* Upgraded to go 1.23.4 and upgraded packages to latest. ([#52](https://github.com/cccteam/db-initiator/issues/52)) ([80affcf](https://github.com/cccteam/db-initiator/commit/80affcf24b5fc945e21f17d36d203e5ee85dfe62))
+
 ## [0.2.4](https://github.com/cccteam/db-initiator/compare/v0.2.3...v0.2.4) (2024-12-05)
 
 
