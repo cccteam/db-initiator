@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/cccteam/db-initiator/compare/v0.2.5...v0.2.6) (2025-02-12)
+
+
+### Code Upgrade
+
+* go dependencies ([#59](https://github.com/cccteam/db-initiator/issues/59)) ([cd3b414](https://github.com/cccteam/db-initiator/commit/cd3b41428796b27afd238b3e83ffcfd71c21ed5b))
+
 ## [0.2.5](https://github.com/cccteam/db-initiator/compare/v0.2.4...v0.2.5) (2025-01-31)
 
 
