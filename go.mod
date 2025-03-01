@@ -5,14 +5,14 @@ go 1.23.6
 replace github.com/golang-migrate/migrate/v4 v4.18.2 => github.com/jtwatson/migrate/v4 v4.18.3-beta.0
 
 require (
-	cloud.google.com/go/spanner v1.75.0
+	cloud.google.com/go/spanner v1.76.1
 	github.com/docker/go-connections v0.5.0
 	github.com/go-playground/errors/v5 v5.4.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/testcontainers/testcontainers-go v0.35.0
-	google.golang.org/api v0.221.0
+	google.golang.org/api v0.222.0
 	google.golang.org/grpc v1.70.0
 )
 
@@ -105,8 +105,8 @@ require (
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20250212204824-5a70512c5d8b // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250212204824-5a70512c5d8b // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250219182151-9fdb1cabc7b2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250219182151-9fdb1cabc7b2 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
