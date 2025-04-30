@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/cccteam/db-initiator/compare/v0.2.6...v0.2.7) (2025-04-30)
+
+
+### Code Upgrade
+
+* `GO` from `1.23.6` to `1.24.2` ([#65](https://github.com/cccteam/db-initiator/issues/65)) ([ae3e538](https://github.com/cccteam/db-initiator/commit/ae3e538af8bbfe49247e718f4873d5f8e61bddf2))
+
 ## [0.2.6](https://github.com/cccteam/db-initiator/compare/v0.2.5...v0.2.6) (2025-02-12)
 
 
