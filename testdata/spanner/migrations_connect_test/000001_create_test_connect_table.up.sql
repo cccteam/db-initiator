@@ -1,0 +1,1 @@
+CREATE TABLE TestConnectTable (ID INT64, Name STRING(100)) PRIMARY KEY (ID);

@@ -134,7 +134,7 @@ func (pc *PostgresContainer) CreateDatabase(ctx context.Context, dbName string) 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to database=%q with %s", dbName, pc.unprivilegedUsername)
 	}
-	_, err = db.Exec(ctx, fmt.Sprintf(`
+	_, err = u.Exec(ctx, fmt.Sprintf(`
 		CREATE SCHEMA IF NOT EXISTS "%s";
 	`, pc.unprivilegedUsername))
 	if err != nil {

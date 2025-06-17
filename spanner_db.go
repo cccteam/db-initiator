@@ -16,6 +16,28 @@ import (
 	"google.golang.org/api/option"
 )
 
+// ConnectToSpanner connects to an existing spanner database
+func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerDB, error) {
+	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
+	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{SessionPoolConfig: spanner.DefaultSessionPoolConfig, DisableNativeMetrics: true}, opts...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
+	}
+
+	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
+	if err != nil {
+		client.Close()
+		return nil, errors.Wrap(err, "database.NewDatabaseAdminClient()")
+	}
+
+	return &SpannerDB{
+		dbStr:      dbStr,
+		admin:      adminClient,
+		Client:     client,
+		closeAdmin: true,
+	}, nil
+}
+
 // SpannerDB represents a database created and ready for migrations
 type SpannerDB struct {
 	dbStr      string

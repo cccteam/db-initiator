@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-playground/errors/v5"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,18 +17,66 @@ type PostgresDatabase struct {
 	connStr string
 }
 
-// NewPostgresDatabase represents a new postgres database
-func NewPostgresDatabase(ctx context.Context, database, schema, connStr string) (*PostgresDatabase, error) {
-	conn, err := openDB(ctx, connStr)
+// ConnectToPostgres connects to an existing postgres database using structured parameters.
+// It does not attempt to create the database or schema.
+func ConnectToPostgres(ctx context.Context, username string, password string, host string, port string, database string, schema string) (*PostgresDatabase, error) {
+	connStr := PostgresConnStr(username, password, host, port, database)
+
+	pool, err := openDB(ctx, connStr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to connect to database %s as user %s", database, username)
 	}
 
 	return &PostgresDatabase{
-		Pool:    conn,
+		Pool:    pool,
 		dbName:  database,
 		schema:  schema,
 		connStr: connStr,
+	}, nil
+}
+
+// NewPostgresDatabase creates a new database and schema, then connects to it.
+func NewPostgresDatabase(ctx context.Context, username, password, host, port, databaseToCreate, schemaToCreate string) (*PostgresDatabase, error) {
+	// a. Construct connection string for a default database (e.g., "postgres")
+	defaultDbConnStr := PostgresConnStr(username, password, host, port, "postgres")
+
+	// b. Open a temporary admin connection to this default database
+	adminPool, err := openDB(ctx, defaultDbConnStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to connect to default database 'postgres' as user %s", username)
+	}
+	defer adminPool.Close()
+
+	// c. Using adminPool, execute CREATE DATABASE
+	createDbSQL := "CREATE DATABASE " + pgx.Identifier{databaseToCreate}.Sanitize() + " WITH OWNER " + pgx.Identifier{username}.Sanitize()
+	_, err = adminPool.Exec(ctx, createDbSQL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute CREATE DATABASE %s WITH OWNER %s", databaseToCreate, username)
+	}
+
+	// e. Construct the connection string for the newly created database
+	targetDbConnStr := PostgresConnStr(username, password, host, port, databaseToCreate)
+
+	// f. Open the main connection pool to this target database
+	mainPool, err := openDB(ctx, targetDbConnStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to connect to newly created database %s as user %s", databaseToCreate, username)
+	}
+
+	// g. Using mainPool, execute CREATE SCHEMA
+	createSchemaSQL := "CREATE SCHEMA IF NOT EXISTS " + pgx.Identifier{schemaToCreate}.Sanitize()
+	_, err = mainPool.Exec(ctx, createSchemaSQL)
+	if err != nil {
+		mainPool.Close()
+
+		return nil, errors.Wrapf(err, "failed to create schema %s in database %s", schemaToCreate, databaseToCreate)
+	}
+
+	return &PostgresDatabase{
+		Pool:    mainPool,
+		dbName:  databaseToCreate,
+		schema:  schemaToCreate,
+		connStr: targetDbConnStr,
 	}, nil
 }
 
