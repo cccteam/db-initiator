@@ -17,24 +17,6 @@ type PostgresDatabase struct {
 	connStr string
 }
 
-// ConnectToPostgres connects to an existing postgres database using structured parameters.
-// It does not attempt to create the database or schema.
-func ConnectToPostgres(ctx context.Context, username string, password string, host string, port string, database string, schema string) (*PostgresDatabase, error) {
-	connStr := PostgresConnStr(username, password, host, port, database)
-
-	pool, err := openDB(ctx, connStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to connect to database %s as user %s", database, username)
-	}
-
-	return &PostgresDatabase{
-		Pool:    pool,
-		dbName:  database,
-		schema:  schema,
-		connStr: connStr,
-	}, nil
-}
-
 // NewPostgresDatabase creates a new database and schema, then connects to it.
 func NewPostgresDatabase(ctx context.Context, username, password, host, port, databaseToCreate, schemaToCreate string) (*PostgresDatabase, error) {
 	// a. Construct connection string for a default database (e.g., "postgres")
@@ -136,4 +118,40 @@ func (db *PostgresDatabase) MigrateDown(sourceURL string) error {
 // Close closes the database connection
 func (db *PostgresDatabase) Close() {
 	db.Pool.Close()
+}
+
+// PostgresMigrationService implements the MigrationService interface for PostgreSQL.
+type PostgresMigrationService struct {
+	connStr string
+}
+
+// ConnectToPostgres connects to an existing postgres database using structured parameters.
+// It does not attempt to create the database or schema.
+// It returns a PostgresMigrationService which can be used to run migrations.
+func ConnectToPostgres(ctx context.Context, username string, password string, host string, port string, database string, schema string) (*PostgresMigrationService, error) {
+	connStr := PostgresConnStr(username, password, host, port, database)
+
+	return &PostgresMigrationService{
+		connStr: connStr,
+	}, nil
+}
+
+// MigrateUp will migrate all the way up, applying all up migrations from the sourceURL
+func (p *PostgresMigrationService) MigrateUp(sourceURL string) error {
+	m, err := migrate.New(sourceURL, p.connStr)
+	if err != nil {
+		return errors.Wrapf(err, "migrate.New(): fileURL=%s and connectionURL=%s", sourceURL, p.connStr)
+	}
+
+	if err := m.Up(); err != nil {
+		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", sourceURL)
+	}
+
+	if err, dbErr := m.Close(); err != nil {
+		return errors.Wrapf(err, "migrate.Migrate.Close(): source error: %s", sourceURL)
+	} else if dbErr != nil {
+		return errors.Wrapf(dbErr, "migrate.Migrate.Close(): database error: %s", sourceURL)
+	}
+
+	return nil
 }
