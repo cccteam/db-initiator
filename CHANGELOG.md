@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9](https://github.com/cccteam/db-initiator/compare/v0.2.8...v0.2.9) (2025-06-17)
+
+
+### Features
+
+* Add support to connect to existing database to run migrations ([#73](https://github.com/cccteam/db-initiator/issues/73)) ([e426b72](https://github.com/cccteam/db-initiator/commit/e426b725afdbf5e9fce22f6940f7a2fbd90d6811))
+
 ## [0.2.8](https://github.com/cccteam/db-initiator/compare/v0.2.7...v0.2.8) (2025-06-12)
 
 
