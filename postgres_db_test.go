@@ -48,7 +48,7 @@ func TestConnectToPostgres(t *testing.T) {
 			defer initialDB.Close()
 
 			// Execution: Call ConnectToPostgres
-			migrationService, err := ConnectToPostgres(ctx, pgContainer.unprivilegedUsername, pgContainer.password, pgContainer.host, pgContainer.port.Port(), tt.name, pgContainer.unprivilegedUsername)
+			migrationService, err := ConnectToPostgres(pgContainer.unprivilegedUsername, pgContainer.password, pgContainer.host, pgContainer.port.Port(), tt.name)
 
 			if tt.expectConnectError {
 				if err == nil {

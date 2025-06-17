@@ -20,35 +20,33 @@ type PostgresDatabase struct {
 // NewPostgresDatabase creates a new database and schema, then connects to it.
 func NewPostgresDatabase(ctx context.Context, username, password, host, port, databaseToCreate, schemaToCreate string) (*PostgresDatabase, error) {
 	// a. Construct connection string for a default database (e.g., "postgres")
-	defaultDbConnStr := PostgresConnStr(username, password, host, port, "postgres")
+	defaultDBConnStr := PostgresConnStr(username, password, host, port, "postgres")
 
 	// b. Open a temporary admin connection to this default database
-	adminPool, err := openDB(ctx, defaultDbConnStr)
+	adminPool, err := openDB(ctx, defaultDBConnStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to default database 'postgres' as user %s", username)
 	}
 	defer adminPool.Close()
 
 	// c. Using adminPool, execute CREATE DATABASE
-	createDbSQL := "CREATE DATABASE " + pgx.Identifier{databaseToCreate}.Sanitize() + " WITH OWNER " + pgx.Identifier{username}.Sanitize()
-	_, err = adminPool.Exec(ctx, createDbSQL)
-	if err != nil {
+	createDBSQL := "CREATE DATABASE " + pgx.Identifier{databaseToCreate}.Sanitize() + " WITH OWNER " + pgx.Identifier{username}.Sanitize()
+	if _, err := adminPool.Exec(ctx, createDBSQL); err != nil {
 		return nil, errors.Wrapf(err, "failed to execute CREATE DATABASE %s WITH OWNER %s", databaseToCreate, username)
 	}
 
 	// e. Construct the connection string for the newly created database
-	targetDbConnStr := PostgresConnStr(username, password, host, port, databaseToCreate)
+	targetDBConnStr := PostgresConnStr(username, password, host, port, databaseToCreate)
 
 	// f. Open the main connection pool to this target database
-	mainPool, err := openDB(ctx, targetDbConnStr)
+	mainPool, err := openDB(ctx, targetDBConnStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to newly created database %s as user %s", databaseToCreate, username)
 	}
 
 	// g. Using mainPool, execute CREATE SCHEMA
 	createSchemaSQL := "CREATE SCHEMA IF NOT EXISTS " + pgx.Identifier{schemaToCreate}.Sanitize()
-	_, err = mainPool.Exec(ctx, createSchemaSQL)
-	if err != nil {
+	if _, err := mainPool.Exec(ctx, createSchemaSQL); err != nil {
 		mainPool.Close()
 
 		return nil, errors.Wrapf(err, "failed to create schema %s in database %s", schemaToCreate, databaseToCreate)
@@ -58,7 +56,7 @@ func NewPostgresDatabase(ctx context.Context, username, password, host, port, da
 		Pool:    mainPool,
 		dbName:  databaseToCreate,
 		schema:  schemaToCreate,
-		connStr: targetDbConnStr,
+		connStr: targetDBConnStr,
 	}, nil
 }
 
@@ -128,7 +126,7 @@ type PostgresMigrationService struct {
 // ConnectToPostgres connects to an existing postgres database using structured parameters.
 // It does not attempt to create the database or schema.
 // It returns a PostgresMigrationService which can be used to run migrations.
-func ConnectToPostgres(ctx context.Context, username string, password string, host string, port string, database string, schema string) (*PostgresMigrationService, error) {
+func ConnectToPostgres(username, password, host, port, database string) (*PostgresMigrationService, error) {
 	connStr := PostgresConnStr(username, password, host, port, database)
 
 	return &PostgresMigrationService{

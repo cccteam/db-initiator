@@ -171,6 +171,7 @@ issues:
         - gochecknoinits
         - lll
         - bodyclose
+        - gocognit
 
     - path: go.mod
       linters:

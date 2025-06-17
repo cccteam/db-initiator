@@ -211,6 +211,7 @@ func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string,
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
 	if err != nil {
 		client.Close()
+
 		return nil, errors.Wrap(err, "database.NewDatabaseAdminClient()")
 	}
 
