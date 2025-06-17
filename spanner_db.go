@@ -195,9 +195,9 @@ func NewSpannerInstance(ctx context.Context, projectID, instanceID string, opts 
 
 // SpannerMigrationService implements the MigrationService interface for Spanner.
 type SpannerMigrationService struct {
-	dbStr      string
-	admin      *spannerDB.DatabaseAdminClient
-	client     *spanner.Client
+	dbStr  string
+	admin  *spannerDB.DatabaseAdminClient
+	client *spanner.Client
 }
 
 // ConnectToSpanner connects to an existing spanner database and returns a SpannerMigrationService.
@@ -215,9 +215,9 @@ func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string,
 	}
 
 	return &SpannerMigrationService{
-		dbStr:      dbStr,
-		admin:      adminClient,
-		client:     client,
+		dbStr:  dbStr,
+		admin:  adminClient,
+		client: client,
 	}, nil
 }
 
@@ -250,9 +250,9 @@ func (s *SpannerMigrationService) MigrateUp(sourceURL string) error {
 
 // Close closes the SpannerMigrationService admin client if necessary.
 func (s *SpannerMigrationService) Close() error {
-		if err := s.admin.Close(); err != nil {
-			return errors.Wrap(err, "database.DatabaseAdminClient.Close()")
-		}
+	if err := s.admin.Close(); err != nil {
+		return errors.Wrap(err, "database.DatabaseAdminClient.Close()")
+	}
 
 	return nil
 }
