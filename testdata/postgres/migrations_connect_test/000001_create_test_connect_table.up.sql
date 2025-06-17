@@ -1,0 +1,1 @@
+CREATE TABLE TestConnectTable (ID SERIAL PRIMARY KEY, Name TEXT);

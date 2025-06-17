@@ -192,3 +192,68 @@ func NewSpannerInstance(ctx context.Context, projectID, instanceID string, opts 
 
 	return nil
 }
+
+// SpannerMigrationService implements the MigrationService interface for Spanner.
+type SpannerMigrationService struct {
+	dbStr  string
+	admin  *spannerDB.DatabaseAdminClient
+	client *spanner.Client
+}
+
+// ConnectToSpanner connects to an existing spanner database and returns a SpannerMigrationService.
+func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerMigrationService, error) {
+	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
+	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{SessionPoolConfig: spanner.DefaultSessionPoolConfig, DisableNativeMetrics: true}, opts...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
+	}
+
+	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
+	if err != nil {
+		client.Close()
+
+		return nil, errors.Wrap(err, "database.NewDatabaseAdminClient()")
+	}
+
+	return &SpannerMigrationService{
+		dbStr:  dbStr,
+		admin:  adminClient,
+		client: client,
+	}, nil
+}
+
+// MigrateUp will migrate all the way up, applying all up migrations from the sourceURL
+func (s *SpannerMigrationService) MigrateUp(sourceURL string) error {
+	conf := &spannerDriver.Config{DatabaseName: s.dbStr, CleanStatements: true}
+	spannerInstance, err := spannerDriver.WithInstance(spannerDriver.NewDB(*s.admin, *s.client), conf)
+	if err != nil {
+		return errors.Wrap(err, "spannerDriver.WithInstance()")
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(sourceURL, "spanner", spannerInstance)
+	if err != nil {
+		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", sourceURL, s.dbStr)
+	}
+	defer m.Close()
+
+	if err := m.Up(); err != nil {
+		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", sourceURL)
+	}
+
+	if err, dbErr := m.Close(); err != nil {
+		return errors.Wrapf(err, "migrate.Migrate.Close(): source error: %s", sourceURL)
+	} else if dbErr != nil {
+		return errors.Wrapf(dbErr, "migrate.Migrate.Close(): database error: %s", sourceURL)
+	}
+
+	return nil
+}
+
+// Close closes the SpannerMigrationService admin client if necessary.
+func (s *SpannerMigrationService) Close() error {
+	if err := s.admin.Close(); err != nil {
+		return errors.Wrap(err, "database.DatabaseAdminClient.Close()")
+	}
+
+	return nil
+}

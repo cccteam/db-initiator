@@ -110,7 +110,6 @@ func TestPostgres_FullMigrationWithNewPostgresDatabase(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		wantErr     bool
 		wantUpErr   bool
 		wantDownErr bool
 	}{
@@ -156,15 +155,7 @@ func TestPostgres_FullMigrationWithNewPostgresDatabase(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			if _, err := pgC.CreateDatabase(ctx, tt.name); (err != nil) != tt.wantErr {
-				t.Fatalf("PostgresContainer.CreateDatabase() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if tt.wantErr {
-				return
-			}
-
-			connStr := PostgresConnStr(pgC.unprivilegedUsername, pgC.password, pgC.host, pgC.port.Port(), tt.name)
-			db, err := NewPostgresDatabase(ctx, tt.name, pgC.unprivilegedUsername, connStr)
+			db, err := NewPostgresDatabase(ctx, pgC.superUsername, pgC.password, pgC.host, pgC.port.Port(), tt.name, pgC.unprivilegedUsername)
 			if err != nil {
 				t.Fatalf("NewPostgresDatabase() error = %v", err)
 			}

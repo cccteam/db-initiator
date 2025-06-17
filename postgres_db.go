@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-playground/errors/v5"
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,18 +17,46 @@ type PostgresDatabase struct {
 	connStr string
 }
 
-// NewPostgresDatabase represents a new postgres database
-func NewPostgresDatabase(ctx context.Context, database, schema, connStr string) (*PostgresDatabase, error) {
-	conn, err := openDB(ctx, connStr)
+// NewPostgresDatabase creates a new database and schema, then connects to it.
+func NewPostgresDatabase(ctx context.Context, username, password, host, port, databaseToCreate, schemaToCreate string) (*PostgresDatabase, error) {
+	// a. Construct connection string for a default database (e.g., "postgres")
+	defaultDBConnStr := PostgresConnStr(username, password, host, port, "postgres")
+
+	// b. Open a temporary admin connection to this default database
+	adminPool, err := openDB(ctx, defaultDBConnStr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to connect to default database 'postgres' as user %s", username)
+	}
+	defer adminPool.Close()
+
+	// c. Using adminPool, execute CREATE DATABASE
+	createDBSQL := "CREATE DATABASE " + pgx.Identifier{databaseToCreate}.Sanitize() + " WITH OWNER " + pgx.Identifier{username}.Sanitize()
+	if _, err := adminPool.Exec(ctx, createDBSQL); err != nil {
+		return nil, errors.Wrapf(err, "failed to execute CREATE DATABASE %s WITH OWNER %s", databaseToCreate, username)
+	}
+
+	// e. Construct the connection string for the newly created database
+	targetDBConnStr := PostgresConnStr(username, password, host, port, databaseToCreate)
+
+	// f. Open the main connection pool to this target database
+	mainPool, err := openDB(ctx, targetDBConnStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to connect to newly created database %s as user %s", databaseToCreate, username)
+	}
+
+	// g. Using mainPool, execute CREATE SCHEMA
+	createSchemaSQL := "CREATE SCHEMA IF NOT EXISTS " + pgx.Identifier{schemaToCreate}.Sanitize()
+	if _, err := mainPool.Exec(ctx, createSchemaSQL); err != nil {
+		mainPool.Close()
+
+		return nil, errors.Wrapf(err, "failed to create schema %s in database %s", schemaToCreate, databaseToCreate)
 	}
 
 	return &PostgresDatabase{
-		Pool:    conn,
-		dbName:  database,
-		schema:  schema,
-		connStr: connStr,
+		Pool:    mainPool,
+		dbName:  databaseToCreate,
+		schema:  schemaToCreate,
+		connStr: targetDBConnStr,
 	}, nil
 }
 
@@ -87,4 +116,40 @@ func (db *PostgresDatabase) MigrateDown(sourceURL string) error {
 // Close closes the database connection
 func (db *PostgresDatabase) Close() {
 	db.Pool.Close()
+}
+
+// PostgresMigrationService implements the MigrationService interface for PostgreSQL.
+type PostgresMigrationService struct {
+	connStr string
+}
+
+// ConnectToPostgres connects to an existing postgres database using structured parameters.
+// It does not attempt to create the database or schema.
+// It returns a PostgresMigrationService which can be used to run migrations.
+func ConnectToPostgres(username, password, host, port, database string) (*PostgresMigrationService, error) {
+	connStr := PostgresConnStr(username, password, host, port, database)
+
+	return &PostgresMigrationService{
+		connStr: connStr,
+	}, nil
+}
+
+// MigrateUp will migrate all the way up, applying all up migrations from the sourceURL
+func (p *PostgresMigrationService) MigrateUp(sourceURL string) error {
+	m, err := migrate.New(sourceURL, p.connStr)
+	if err != nil {
+		return errors.Wrapf(err, "migrate.New(): fileURL=%s and connectionURL=%s", sourceURL, p.connStr)
+	}
+
+	if err := m.Up(); err != nil {
+		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", sourceURL)
+	}
+
+	if err, dbErr := m.Close(); err != nil {
+		return errors.Wrapf(err, "migrate.Migrate.Close(): source error: %s", sourceURL)
+	} else if dbErr != nil {
+		return errors.Wrapf(dbErr, "migrate.Migrate.Close(): database error: %s", sourceURL)
+	}
+
+	return nil
 }
