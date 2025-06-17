@@ -5,15 +5,15 @@ go 1.24.4
 replace github.com/golang-migrate/migrate/v4 v4.18.2 => github.com/jtwatson/migrate/v4 v4.18.3-beta.0
 
 require (
-	cloud.google.com/go/spanner v1.80.0
+	cloud.google.com/go/spanner v1.82.0
 	github.com/docker/go-connections v0.5.0
 	github.com/go-playground/errors/v5 v5.4.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
-	github.com/jackc/pgx/v5 v5.7.4
+	github.com/jackc/pgx/v5 v5.7.5
 	github.com/testcontainers/testcontainers-go v0.37.0
-	google.golang.org/api v0.231.0
-	google.golang.org/grpc v1.72.0
+	google.golang.org/api v0.232.0
+	google.golang.org/grpc v1.73.0
 )
 
 require (
@@ -103,14 +103,14 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/oauth2 v0.29.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20250428153025-10db94c68c34 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250428153025-10db94c68c34 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250428153025-10db94c68c34 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250505200425-f936aa4a68b2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250505200425-f936aa4a68b2 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
