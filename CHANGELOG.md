@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.10](https://github.com/cccteam/db-initiator/compare/v0.2.9...v0.2.10) (2025-07-23)
+
+
+### Features
+
+* Add logging for migration progress ([#77](https://github.com/cccteam/db-initiator/issues/77)) ([7e72d57](https://github.com/cccteam/db-initiator/commit/7e72d5719bc0b16e66daa13f961cd028ddaf7f47))
+
 ## [0.2.9](https://github.com/cccteam/db-initiator/compare/v0.2.8...v0.2.9) (2025-06-17)
 
 
