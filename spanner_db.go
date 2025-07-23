@@ -94,6 +94,7 @@ func (db *SpannerDB) migrateUp(source string, spannerInstance migratedb.Driver) 
 		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", source, db.dbStr)
 	}
 	defer m.Close()
+	m.Log = new(logger)
 
 	if _, _, err := m.Version(); !errors.Is(err, migrate.ErrNilVersion) {
 		if err := m.Force(-1); err != nil {
@@ -127,6 +128,7 @@ func (db *SpannerDB) MigrateDown(sourceURL string) error {
 		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", sourceURL, db.dbStr)
 	}
 	defer m.Close()
+	m.Log = new(logger)
 
 	if err := m.Down(); err != nil {
 		return errors.Wrap(err, "migrate.Migrate.Down()")
@@ -235,6 +237,7 @@ func (s *SpannerMigrationService) MigrateUp(sourceURL string) error {
 		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", sourceURL, s.dbStr)
 	}
 	defer m.Close()
+	m.Log = new(logger)
 
 	if err := m.Up(); err != nil {
 		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", sourceURL)
