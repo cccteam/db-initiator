@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.11](https://github.com/cccteam/db-initiator/compare/v0.2.10...v0.2.11) (2025-08-01)
+
+
+### Code Upgrade
+
+* docker v28.2.2 =&gt; v28.3.3 ([#82](https://github.com/cccteam/db-initiator/issues/82)) ([6f27b5b](https://github.com/cccteam/db-initiator/commit/6f27b5b001624039dfa44827a9bae2940dab2b8c))
+
 ## [0.2.10](https://github.com/cccteam/db-initiator/compare/v0.2.9...v0.2.10) (2025-07-23)
 
 
