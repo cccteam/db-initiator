@@ -1,6 +1,6 @@
 module github.com/cccteam/db-initiator
 
-go 1.24.4
+go 1.24.6
 
 replace github.com/golang-migrate/migrate/v4 v4.18.3 => github.com/jtwatson/migrate/v4 v4.18.4-beta.0
 
