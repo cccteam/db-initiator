@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.12](https://github.com/cccteam/db-initiator/compare/v0.2.11...v0.2.12) (2025-08-14)
+
+
+### Bug Fixes
+
+* Add token so workflows will trigger ([#91](https://github.com/cccteam/db-initiator/issues/91)) ([f6e4bb6](https://github.com/cccteam/db-initiator/commit/f6e4bb679ee8e7e246e3e1e3f037bfe58ae63253))
+
+
+### Code Refactoring
+
+* Ignore Release Please branches ([#90](https://github.com/cccteam/db-initiator/issues/90)) ([201022e](https://github.com/cccteam/db-initiator/commit/201022ee198bf9f2d83ca89d185ab602a3f3fdc3))
+* Switch from the Release Please Bot to Action ([#88](https://github.com/cccteam/db-initiator/issues/88)) ([94e2ca8](https://github.com/cccteam/db-initiator/commit/94e2ca8612fe265ff90801fbaba5be67ca6f0cc5))
+
+
+### Code Upgrade
+
+* replace docker v28.3.3+incompatible =&gt; moby v28.3.3+incompatible ([#87](https://github.com/cccteam/db-initiator/issues/87)) ([b970a4b](https://github.com/cccteam/db-initiator/commit/b970a4bf342d8b9f5ab562cb50f022cfa1501bd2))
+
 ## [0.2.11](https://github.com/cccteam/db-initiator/compare/v0.2.10...v0.2.11) (2025-08-11)
 
 
