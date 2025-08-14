@@ -2,8 +2,6 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened] # these are the defaults - synchronize means 'commits pushed to PR'
-    branches-ignore:
-      - 'release-please--*'
 
 concurrency:
   group: ${{ github.ref }}
