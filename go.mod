@@ -3,7 +3,6 @@ module github.com/cccteam/db-initiator
 go 1.24.6
 
 replace github.com/golang-migrate/migrate/v4 v4.18.3 => github.com/jtwatson/migrate/v4 v4.18.4-beta.0
-replace github.com/docker/docker v28.3.3+incompatible => github.com/moby/moby v28.3.3+incompatible
 
 require (
 	cloud.google.com/go/spanner v1.83.0
