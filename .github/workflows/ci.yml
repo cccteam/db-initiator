@@ -14,4 +14,4 @@ jobs:
       build-tags: '[""]'
       golangci-lint-version: "v2.4.0"
   semantic-pull-request-title:
-    uses: cccteam/github-workflows/.github/workflows/semantic-pull-request-title.yml@v5.11.0
+    uses: cccteam/github-workflows/.github/workflows/semantic-pull-request-title.yml@v5.12.3
