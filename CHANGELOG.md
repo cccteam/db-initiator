@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.13](https://github.com/cccteam/db-initiator/compare/v0.2.12...v0.2.13) (2025-11-03)
+
+
+### Bug Fixes
+
+* Revert "upgrade: replace docker v28.3.3+incompatible =&gt; moby v28.3.3+incompatible ([#87](https://github.com/cccteam/db-initiator/issues/87))" ([#92](https://github.com/cccteam/db-initiator/issues/92)) ([e33c3e2](https://github.com/cccteam/db-initiator/commit/e33c3e2e36fa9579eb2a18e24704f79a31a9a8ba))
+
+
+### Code Upgrade
+
+* go 1.25.3 and deps ([#98](https://github.com/cccteam/db-initiator/issues/98)) ([adf0609](https://github.com/cccteam/db-initiator/commit/adf0609afb4a03b3c453116dd01ef47d262abee8))
+
 ## [0.2.12](https://github.com/cccteam/db-initiator/compare/v0.2.11...v0.2.12) (2025-08-14)
 
 
