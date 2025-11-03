@@ -33,7 +33,9 @@ func NewSpannerDatabase(ctx context.Context, projectID, instanceID, dbName strin
 
 	db, err := newSpannerDatabase(ctx, adminClient, projectID, instanceID, dbName, opts...)
 	if err != nil {
-		adminClient.Close()
+		if closeErr := adminClient.Close(); closeErr != nil {
+			return nil, errors.Wrap(errors.Join(err, closeErr), "spannerDB.DatabaseAdminClient.Close()")
+		}
 
 		return nil, err
 	}
