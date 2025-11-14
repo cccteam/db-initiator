@@ -256,6 +256,8 @@ func (s *SpannerMigrationService) MigrateUp(sourceURL string) error {
 
 // Close closes the SpannerMigrationService admin client if necessary.
 func (s *SpannerMigrationService) Close() error {
+	s.client.Close()
+
 	if err := s.admin.Close(); err != nil {
 		return errors.Wrap(err, "database.DatabaseAdminClient.Close()")
 	}
