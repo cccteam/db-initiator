@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.14](https://github.com/cccteam/db-initiator/compare/v0.2.13...v0.2.14) (2025-11-14)
+
+
+### Bug Fixes
+
+* Close client when calling close on SpannerMigrationService ([#100](https://github.com/cccteam/db-initiator/issues/100)) ([fc92ebd](https://github.com/cccteam/db-initiator/commit/fc92ebd917d130c1a2393716f1c397f6dbb4346a))
+
+
+### Code Cleanup
+
+* Enable metrics for SpannerMigrationService ([#100](https://github.com/cccteam/db-initiator/issues/100)) ([fc92ebd](https://github.com/cccteam/db-initiator/commit/fc92ebd917d130c1a2393716f1c397f6dbb4346a))
+
 ## [0.2.13](https://github.com/cccteam/db-initiator/compare/v0.2.12...v0.2.13) (2025-11-03)
 
 
