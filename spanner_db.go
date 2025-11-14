@@ -96,7 +96,6 @@ func (db *SpannerDB) migrateUp(source string, spannerInstance migratedb.Driver) 
 		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", source, db.dbStr)
 	}
 	defer m.Close()
-	m.Log = new(logger)
 
 	if _, _, err := m.Version(); !errors.Is(err, migrate.ErrNilVersion) {
 		if err := m.Force(-1); err != nil {
@@ -130,7 +129,6 @@ func (db *SpannerDB) MigrateDown(sourceURL string) error {
 		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", sourceURL, db.dbStr)
 	}
 	defer m.Close()
-	m.Log = new(logger)
 
 	if err := m.Down(); err != nil {
 		return errors.Wrap(err, "migrate.Migrate.Down()")
@@ -207,9 +205,9 @@ type SpannerMigrationService struct {
 // ConnectToSpanner connects to an existing spanner database and returns a SpannerMigrationService.
 func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerMigrationService, error) {
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
-	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{SessionPoolConfig: spanner.DefaultSessionPoolConfig, DisableNativeMetrics: true}, opts...)
+	client, err := spanner.NewClient(ctx, dbStr, opts...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
+		return nil, errors.Wrapf(err, "spanner.NewClient()")
 	}
 
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
@@ -256,6 +254,8 @@ func (s *SpannerMigrationService) MigrateUp(sourceURL string) error {
 
 // Close closes the SpannerMigrationService admin client if necessary.
 func (s *SpannerMigrationService) Close() error {
+	s.client.Close()
+
 	if err := s.admin.Close(); err != nil {
 		return errors.Wrap(err, "database.DatabaseAdminClient.Close()")
 	}
