@@ -207,9 +207,9 @@ type SpannerMigrationService struct {
 // ConnectToSpanner connects to an existing spanner database and returns a SpannerMigrationService.
 func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerMigrationService, error) {
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
-	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{SessionPoolConfig: spanner.DefaultSessionPoolConfig, DisableNativeMetrics: true}, opts...)
+	client, err := spanner.NewClient(ctx, dbStr, opts...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
+		return nil, errors.Wrapf(err, "spanner.NewClient()")
 	}
 
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
