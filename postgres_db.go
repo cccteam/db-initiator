@@ -72,7 +72,6 @@ func (db *PostgresDatabase) MigrateUp(sourceURL ...string) error {
 		if err != nil {
 			return errors.Wrapf(err, "migrate.New(): fileURL=%s and connectionURL=%s", source, db.connStr)
 		}
-		m.Log = new(logger)
 
 		if _, _, err := m.Version(); err == nil {
 			if err := m.Force(-1); err != nil {
@@ -100,7 +99,6 @@ func (db *PostgresDatabase) MigrateDown(sourceURL string) error {
 	if err != nil {
 		return errors.Wrapf(err, "failed to create new migrate with fileURL=%s and connectionURL=%s", sourceURL, db.connStr)
 	}
-	m.Log = new(logger)
 
 	if err := m.Down(); err != nil {
 		return errors.Wrap(err, "migrate.Migrate.Down()")
