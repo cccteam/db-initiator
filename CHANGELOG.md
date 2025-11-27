@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.15](https://github.com/cccteam/db-initiator/compare/v0.2.14...v0.2.15) (2025-11-27)
+
+
+### Bug Fixes
+
+* Disable logging for PostgreSQL test migrations as it is too noisy ([#103](https://github.com/cccteam/db-initiator/issues/103)) ([369173b](https://github.com/cccteam/db-initiator/commit/369173bfae60e21d39a43678b36d5786d3a15ef3))
+
 ## [0.2.14](https://github.com/cccteam/db-initiator/compare/v0.2.13...v0.2.14) (2025-11-14)
 
 
