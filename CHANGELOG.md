@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.16](https://github.com/cccteam/db-initiator/compare/v0.2.15...v0.2.16) (2025-12-03)
+
+
+### Code Upgrade
+
+* crypto v0.43.0 =&gt; v0.45.0 ([#108](https://github.com/cccteam/db-initiator/issues/108)) ([3d171f7](https://github.com/cccteam/db-initiator/commit/3d171f7ef6278d856ed4130adf1573de39970652))
+
 ## [0.2.15](https://github.com/cccteam/db-initiator/compare/v0.2.14...v0.2.15) (2025-11-27)
 
 
