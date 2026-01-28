@@ -147,7 +147,7 @@ func (s *SpannerMigrator) MigrateDropSchema(ctx context.Context) error {
 	return nil
 }
 
-// Close closes the SpannerMigrator connections
+// Close cleans up resources
 func (s *SpannerMigrator) Close() error {
 	s.client.Close()
 
