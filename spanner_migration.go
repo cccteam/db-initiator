@@ -27,7 +27,8 @@ type SpannerMigrator struct {
 	client                *spanner.Client
 }
 
-// ConnectToSpanner connects to an existing spanner database and returns a SpannerMigrator.
+// ConnectToSpanner connects to an existing spanner database and returns a [SpannerMigrator]
+//
 // Uses the following tables by default to store migration versions:
 //   - Data Migrations table: "DataMigrations"
 //   - Schema Migrations table: "SchemaMigrations"
@@ -35,7 +36,7 @@ func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string,
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
 	client, err := spanner.NewClient(ctx, dbStr, opts...)
 	if err != nil {
-		return nil, errors.Wrapf(err, "spanner.NewClient()")
+		return nil, errors.Wrap(err, "spanner.NewClient()")
 	}
 
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
