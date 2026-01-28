@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestConnectToPostgres(t *testing.T) {
+func TestNewPostgresMigrator(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -47,24 +47,24 @@ func TestConnectToPostgres(t *testing.T) {
 			}
 			defer initialDB.Close()
 
-			// Execution: Call ConnectToPostgres
-			migrationService, err := ConnectToPostgres(pgContainer.unprivilegedUsername, pgContainer.password, pgContainer.host, pgContainer.port.Port(), tt.name)
+			// Execution: Call NewPostgresMigrator
+			pgMigrator, err := NewPostgresMigrator(pgContainer.unprivilegedUsername, pgContainer.password, pgContainer.host, pgContainer.port.Port(), tt.name)
 
 			if tt.expectConnectError {
 				if err == nil {
-					t.Fatalf("ConnectToPostgres should have failed for db %s, but got nil error", tt.name)
+					t.Fatalf("NewPostgresMigrator should have failed for db %s, but got nil error", tt.name)
 				}
 
 				return // End this subtest
 			}
 			if err != nil {
-				t.Fatalf("ConnectToPostgres should succeed for db %s: %v", tt.name, err)
+				t.Fatalf("NewPostgresMigrator should succeed for db %s: %v", tt.name, err)
 			}
-			if migrationService == nil {
-				t.Fatalf("PostgresMigrationService should not be nil for db %s", tt.name)
+			if pgMigrator == nil {
+				t.Fatalf("PostgresMigration should not be nil for db %s", tt.name)
 			}
 
-			if err := migrationService.MigrateUp(tt.migrationSourceDir); tt.expectMigrateUpError {
+			if err := pgMigrator.MigrateUp(tt.migrationSourceDir); tt.expectMigrateUpError {
 				if err == nil {
 					t.Errorf("migrationService.MigrateUp should have failed for db %s, but got nil error", tt.name)
 				}

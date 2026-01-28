@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestSpannerMigrationService_MethodChaining(t *testing.T) {
+func TestSpannerMigrator_MethodChaining(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -55,7 +55,7 @@ func TestSpannerMigrationService_MethodChaining(t *testing.T) {
 	}
 }
 
-func TestSpannerMigrationService_MigrateUpSchema(t *testing.T) {
+func TestSpannerMigrator_MigrateUpSchema(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -112,24 +112,24 @@ func TestSpannerMigrationService_MigrateUpSchema(t *testing.T) {
 				}
 			}()
 
-			svc, err := ConnectToSpanner(ctx, container.projectID, container.instanceID, dbName, container.opts...)
+			svc, err := NewSpannerMigrator(ctx, container.projectID, container.instanceID, dbName, container.opts...)
 			if err != nil {
-				t.Fatalf("ConnectToSpanner() error = %v", err)
+				t.Fatalf("NewSpannerMigrator() error = %v", err)
 			}
 			defer func() {
 				if err := svc.Close(); err != nil {
-					t.Errorf("SpannerMigrationService.Close() err=%s", err)
+					t.Errorf("SpannerMigrator.Close() err=%s", err)
 				}
 			}()
 
 			if err := svc.MigrateUpSchema(ctx, tt.args.sourceURL); (err != nil) != tt.wantErr {
-				t.Errorf("SpannerMigrationService.MigrateUpSchema() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SpannerMigrator.MigrateUpSchema() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestSpannerMigrationService_MigrateUpData(t *testing.T) {
+func TestSpannerMigrator_MigrateUpData(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -183,29 +183,29 @@ func TestSpannerMigrationService_MigrateUpData(t *testing.T) {
 				}
 			}()
 
-			svc, err := ConnectToSpanner(ctx, container.projectID, container.instanceID, dbName, container.opts...)
+			svc, err := NewSpannerMigrator(ctx, container.projectID, container.instanceID, dbName, container.opts...)
 			if err != nil {
-				t.Fatalf("ConnectToSpanner() error = %v", err)
+				t.Fatalf("NewSpannerMigrator() error = %v", err)
 			}
 			defer func() {
 				if err := svc.Close(); err != nil {
-					t.Errorf("SpannerMigrationService.Close() err=%s", err)
+					t.Errorf("SpannerMigrator.Close() err=%s", err)
 				}
 			}()
 
 			// First apply schema migrations to set up the tables
 			if err := svc.MigrateUpSchema(ctx, tt.args.schemaSourceURL); err != nil {
-				t.Fatalf("SpannerMigrationService.MigrateUpSchema() error = %v", err)
+				t.Fatalf("SpannerMigrator.MigrateUpSchema() error = %v", err)
 			}
 
 			if err := svc.MigrateUpData(ctx, tt.args.dataSourceURL); (err != nil) != tt.wantErr {
-				t.Errorf("SpannerMigrationService.MigrateUpData() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SpannerMigrator.MigrateUpData() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestSpannerMigrationService_MigrateDropSchema(t *testing.T) {
+func TestSpannerMigrator_MigrateDropSchema(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -255,25 +255,25 @@ func TestSpannerMigrationService_MigrateDropSchema(t *testing.T) {
 				}
 			}()
 
-			svc, err := ConnectToSpanner(ctx, container.projectID, container.instanceID, dbName, container.opts...)
+			svc, err := NewSpannerMigrator(ctx, container.projectID, container.instanceID, dbName, container.opts...)
 			if err != nil {
-				t.Fatalf("ConnectToSpanner() error = %v", err)
+				t.Fatalf("NewSpannerMigrator() error = %v", err)
 			}
 			defer func() {
 				if err := svc.Close(); err != nil {
-					t.Errorf("SpannerMigrationService.Close() err=%s", err)
+					t.Errorf("SpannerMigrator.Close() err=%s", err)
 				}
 			}()
 
 			// Apply schema migrations if provided
 			if tt.args.schemaSourceURL != "" {
 				if err := svc.MigrateUpSchema(ctx, tt.args.schemaSourceURL); err != nil {
-					t.Fatalf("SpannerMigrationService.MigrateUpSchema() error = %v", err)
+					t.Fatalf("SpannerMigrator.MigrateUpSchema() error = %v", err)
 				}
 			}
 
-			if err := svc.MigrateDropSchema(ctx, tt.args.schemaSourceURL); (err != nil) != tt.wantErr {
-				t.Errorf("SpannerMigrationService.MigrateDropSchema() error = %v, wantErr %v", err, tt.wantErr)
+			if err := svc.MigrateDropSchema(ctx); (err != nil) != tt.wantErr {
+				t.Errorf("SpannerMigrator.MigrateDropSchema() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

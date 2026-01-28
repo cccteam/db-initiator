@@ -20,7 +20,7 @@ Compared to the Spanner implementation, PostgreSQL currently has the following l
 
 - No separate schema vs data migrations (single `MigrateUp` only)
 - No configurable migrations table name
-- `ConnectToPostgres` only supports `MigrateUp` (no down/drop migrations)
+- `PostgresMigrator` only supports `MigrateUp` (no down/drop migrations)
 
 ## License
 
