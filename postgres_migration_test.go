@@ -64,7 +64,7 @@ func TestNewPostgresMigrator(t *testing.T) {
 				t.Fatalf("PostgresMigration should not be nil for db %s", tt.name)
 			}
 
-			if err := pgMigrator.MigrateUp(tt.migrationSourceDir); tt.expectMigrateUpError {
+			if err := pgMigrator.MigrateUpSchema(ctx, tt.migrationSourceDir); tt.expectMigrateUpError {
 				if err == nil {
 					t.Errorf("migrationService.MigrateUp should have failed for db %s, but got nil error", tt.name)
 				}

@@ -27,6 +27,8 @@ type SpannerMigrator struct {
 	client                *spanner.Client
 }
 
+var _ Migrator = (*SpannerMigrator)(nil)
+
 // NewSpannerMigrator connects to an existing spanner database and returns a [SpannerMigrator]
 //
 // Uses the following tables by default to store migration versions:

@@ -1,6 +1,8 @@
 package dbinitiator
 
 import (
+	"context"
+
 	"github.com/go-playground/errors/v5"
 	"github.com/golang-migrate/migrate/v4"
 )
@@ -9,9 +11,10 @@ type PostgresMigrator struct {
 	connStr string
 }
 
-// NewPostgresMigrator connects to an existing postgres database using structured parameters.
+var _ Migrator = (*PostgresMigrator)(nil)
+
+// NewPostgresMigrator returns a new [PostgresMigrator].
 // It does not attempt to create the database or schema.
-// It returns a [PostgresMigrator] which can be used to run migrations.
 func NewPostgresMigrator(username, password, host, port, database string) (*PostgresMigrator, error) {
 	connStr := PostgresConnStr(username, password, host, port, database)
 
@@ -21,7 +24,7 @@ func NewPostgresMigrator(username, password, host, port, database string) (*Post
 }
 
 // MigrateUp will migrate all the way up, applying all up migrations from the sourceURL
-func (p *PostgresMigrator) MigrateUp(sourceURL string) error {
+func (p *PostgresMigrator) MigrateUpSchema(_ context.Context, sourceURL string) error {
 	m, err := migrate.New(sourceURL, p.connStr)
 	if err != nil {
 		return errors.Wrapf(err, "migrate.New(): fileURL=%s and connectionURL=%s", sourceURL, p.connStr)
@@ -39,4 +42,14 @@ func (p *PostgresMigrator) MigrateUp(sourceURL string) error {
 	}
 
 	return nil
+}
+
+// FIXME(zredinger): implement this method
+func (p *PostgresMigrator) MigrateUpData(_ context.Context, sourceURL string) error {
+	return errors.New("Not implemented")
+}
+
+// FIXME(zredinger): implement this method
+func (p *PostgresMigrator) MigrateDropSchema(_ context.Context) error {
+	return errors.New("Not implemented")
 }

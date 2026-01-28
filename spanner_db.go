@@ -151,6 +151,7 @@ func (db *SpannerDB) DropDatabase(ctx context.Context) error {
 	return nil
 }
 
+// Close cleans up open resources
 func (db *SpannerDB) Close() error {
 	db.Client.Close()
 
