@@ -12,7 +12,7 @@ type PostgresMigrator struct {
 
 // ConnectToPostgres connects to an existing postgres database using structured parameters.
 // It does not attempt to create the database or schema.
-// It returns a PostgresMigrationService which can be used to run migrations.
+// It returns a [PostgresMigrator] which can be used to run migrations.
 func ConnectToPostgres(username, password, host, port, database string) (*PostgresMigrator, error) {
 	connStr := PostgresConnStr(username, password, host, port, database)
 
