@@ -95,9 +95,51 @@ func (s *SpannerMigrator) MigrateUpData(ctx context.Context, sourceURL string) e
 }
 
 // MigrateDropSchema drops all objects in the schema
-func (s *SpannerMigrator) MigrateDropSchema(ctx context.Context, sourceURL string) error {
-	if err := s.drop(ctx); err != nil {
-		return errors.Wrapf(err, "SpannerMigrator.drop(): %s", sourceURL)
+//
+// This happens in the following order:
+//  1. Drop views
+//  2. Drop FK constraints
+//  3. Drop Indexes
+//  4. Drop tables
+func (s *SpannerMigrator) MigrateDropSchema(ctx context.Context) error {
+	stmts := make([]string, 0, 10)
+	viewDropStatements, err := s.viewDropStatements(ctx)
+	if err != nil {
+		return err
+	}
+	stmts = append(stmts, viewDropStatements...)
+
+	foreignKeyDropStatements, err := s.foreignKeyDropStatements(ctx)
+	if err != nil {
+		return err
+	}
+	stmts = append(stmts, foreignKeyDropStatements...)
+
+	indexDropStatements, err := s.indexDropStatements(ctx)
+	if err != nil {
+		return err
+	}
+	stmts = append(stmts, indexDropStatements...)
+
+	tableDropStatements, err := s.tableDropStatements(ctx)
+	if err != nil {
+		return err
+	}
+	stmts = append(stmts, tableDropStatements...)
+
+	if len(stmts) > 0 {
+		op, err := s.admin.UpdateDatabaseDdl(ctx, &adminpb.UpdateDatabaseDdlRequest{
+			Database:   s.connectionString,
+			Statements: stmts,
+		})
+		if err != nil {
+			return errors.Wrap(err, "SpannerMigrator.admin.UpdateDatabaseDdl()")
+		}
+		if err := op.Wait(ctx); err != nil {
+			return errors.Wrap(err, "SpannerMigrator.admin.UpdateDatabaseDdl().Wait()")
+		}
+	} else {
+		ccclogger.FromCtx(ctx).Info("No database objects found to drop")
 	}
 
 	return nil
@@ -145,54 +187,6 @@ func (s *SpannerMigrator) newMigrate(migrationsTable, sourceURL string) (*migrat
 	m.Log = new(logger)
 
 	return m, nil
-}
-
-// drop creates statements to drop the indexes and tables accordingly.
-// Drop happens in the following order:
-//  1. Drop views
-//  2. Drop FK constraints
-//  3. Drop Indexes
-//  4. Drop tables
-func (s *SpannerMigrator) drop(ctx context.Context) error {
-	stmts := make([]string, 0, 10)
-	viewDropStatements, err := s.viewDropStatements(ctx)
-	if err != nil {
-		return err
-	}
-	stmts = append(stmts, viewDropStatements...)
-
-	foreignKeyDropStatements, err := s.foreignKeyDropStatements(ctx)
-	if err != nil {
-		return err
-	}
-	stmts = append(stmts, foreignKeyDropStatements...)
-
-	indexDropStatements, err := s.indexDropStatements(ctx)
-	if err != nil {
-		return err
-	}
-	stmts = append(stmts, indexDropStatements...)
-
-	tableDropStatements, err := s.tableDropStatements(ctx)
-	if err != nil {
-		return err
-	}
-	stmts = append(stmts, tableDropStatements...)
-
-	if len(stmts) > 0 {
-		op, err := s.admin.UpdateDatabaseDdl(ctx, &adminpb.UpdateDatabaseDdlRequest{
-			Database:   s.connectionString,
-			Statements: stmts,
-		})
-		if err != nil {
-			return errors.Wrap(err, "SpannerMigrator.admin.UpdateDatabaseDdl()")
-		}
-		if err := op.Wait(ctx); err != nil {
-			return errors.Wrap(err, "SpannerMigrator.admin.UpdateDatabaseDdl().Wait()")
-		}
-	}
-
-	return nil
 }
 
 func (s *SpannerMigrator) viewDropStatements(ctx context.Context) ([]string, error) {
