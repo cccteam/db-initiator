@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.0](https://github.com/cccteam/db-initiator/compare/v0.2.17...v0.3.0) (2026-01-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* Changes to interfaces for consistency
+
+### Features
+
+* Enhance migrations ([#115](https://github.com/cccteam/db-initiator/issues/115)) ([c231352](https://github.com/cccteam/db-initiator/commit/c2313527c5e09e465486b1a9976c0bdd653ea7b6))
+* Enhance Migrator for spanner to enable dropping and data migrations ([c231352](https://github.com/cccteam/db-initiator/commit/c2313527c5e09e465486b1a9976c0bdd653ea7b6))
+
+
+### Documentation
+
+* add more descriptive readme ([c231352](https://github.com/cccteam/db-initiator/commit/c2313527c5e09e465486b1a9976c0bdd653ea7b6))
+
+
+### Code Refactoring
+
+* Changes to interfaces for consistency ([c231352](https://github.com/cccteam/db-initiator/commit/c2313527c5e09e465486b1a9976c0bdd653ea7b6))
+
 ## [0.2.17](https://github.com/cccteam/db-initiator/compare/v0.2.16...v0.2.17) (2025-12-03)
 
 
