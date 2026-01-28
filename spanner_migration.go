@@ -75,13 +75,8 @@ func (s *SpannerMigrator) WithDataMigrationsTable(table string) *SpannerMigrator
 // Use for DDL migrations
 func (s *SpannerMigrator) MigrateUpSchema(ctx context.Context, sourceURL string) error {
 	ccclogger.FromCtx(ctx).Infof("Applying schema migrations from %s", sourceURL)
-	m, err := s.newMigrate(s.schemaMigrationsTable, sourceURL)
-	if err != nil {
-		return errors.Wrap(err, "SpannerMigrator.newMigrate()")
-	}
-
-	if err := m.Up(); err != nil {
-		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", sourceURL)
+	if err := s.migrateUp(s.schemaMigrationsTable, sourceURL); err != nil {
+		return errors.Wrap(err, "SpannerMigrator.migrateUp()")
 	}
 
 	return nil
