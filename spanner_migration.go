@@ -146,6 +146,7 @@ func (s *SpannerMigrator) newMigrate(migrationsTable, sourceURL string) (*migrat
 	if err != nil {
 		return nil, errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", sourceURL, s.connectionString)
 	}
+	m.Log = new(logger)
 
 	return m, nil
 }
@@ -184,7 +185,7 @@ func (s *SpannerMigrator) drop(ctx context.Context) error {
 
 	if len(stmts) > 0 {
 		op, err := s.admin.UpdateDatabaseDdl(ctx, &adminpb.UpdateDatabaseDdlRequest{
-			Database:   s.databaseName,
+			Database:   s.connectionString,
 			Statements: stmts,
 		})
 		if err != nil {

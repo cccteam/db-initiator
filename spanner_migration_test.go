@@ -2,6 +2,8 @@ package dbinitiator
 
 import (
 	"context"
+	"crypto/rand"
+	"math/big"
 	"strings"
 	"testing"
 )
@@ -96,7 +98,7 @@ func TestSpannerMigrationService_MigrateUpSchema(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			dbName := strings.Replace(tt.name, " ", "_", -1)
+			dbName := genDBName()
 			db, err := container.CreateDatabase(ctx, dbName)
 			if err != nil {
 				t.Fatalf("SpannerContainer.CreateDatabase() error = %v", err)
@@ -166,7 +168,7 @@ func TestSpannerMigrationService_MigrateUpData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			dbName := strings.Replace(tt.name, " ", "-", -1)
+			dbName := genDBName()
 
 			db, err := container.CreateDatabase(ctx, dbName)
 			if err != nil {
@@ -222,7 +224,7 @@ func TestSpannerMigrationService_MigrateDropSchema(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "successful drop schema after migration",
+			name: "successful drop schema",
 			args: args{
 				schemaSourceURL: "file://testdata/spanner/migrations",
 			},
@@ -239,8 +241,8 @@ func TestSpannerMigrationService_MigrateDropSchema(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			db, err := container.CreateDatabase(ctx, tt.name)
+			dbName := genDBName()
+			db, err := container.CreateDatabase(ctx, dbName)
 			if err != nil {
 				t.Fatalf("SpannerContainer.CreateDatabase() error = %v", err)
 			}
@@ -253,7 +255,7 @@ func TestSpannerMigrationService_MigrateDropSchema(t *testing.T) {
 				}
 			}()
 
-			svc, err := ConnectToSpanner(ctx, container.projectID, container.instanceID, tt.name, container.opts...)
+			svc, err := ConnectToSpanner(ctx, container.projectID, container.instanceID, dbName, container.opts...)
 			if err != nil {
 				t.Fatalf("ConnectToSpanner() error = %v", err)
 			}
@@ -275,4 +277,15 @@ func TestSpannerMigrationService_MigrateDropSchema(t *testing.T) {
 			}
 		})
 	}
+}
+
+func genDBName() string {
+	var randStr strings.Builder
+
+	for range 10 {
+		n, _ := rand.Int(rand.Reader, big.NewInt(26))
+		randStr.WriteString(string('a' + rune(n.Int64())))
+	}
+
+	return randStr.String()
 }
