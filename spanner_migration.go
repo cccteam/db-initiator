@@ -23,12 +23,14 @@ type SpannerMigrator struct {
 	dataMigrationsTable   string
 	schemaMigrationsTable string
 	databaseName          string
-	instanceID            string
 	admin                 *spannerDB.DatabaseAdminClient
 	client                *spanner.Client
 }
 
-// ConnectToSpanner connects to an existing spanner database and returns a SpannerMigrator
+// ConnectToSpanner connects to an existing spanner database and returns a SpannerMigrator.
+// Uses the following tables by default to store migration versions:
+//   - Data Migrations table: "DataMigrations"
+//   - Schema Migrations table: "SchemaMigrations"
 func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerMigrator, error) {
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
 	client, err := spanner.NewClient(ctx, dbStr, opts...)
@@ -48,7 +50,6 @@ func ConnectToSpanner(ctx context.Context, projectID, instanceID, dbName string,
 		schemaMigrationsTable: "SchemaMigrations",
 		connectionString:      dbStr,
 		databaseName:          dbName,
-		instanceID:            instanceID,
 		admin:                 adminClient,
 		client:                client,
 	}, nil
@@ -69,11 +70,13 @@ func (s *SpannerMigrator) WithDataMigrationsTable(table string) *SpannerMigrator
 }
 
 // MigrateUpSchema will migrate all the way up, applying all up migrations from the sourceURL
+//
+// Use for DDL migrations
 func (s *SpannerMigrator) MigrateUpSchema(ctx context.Context, sourceURL string) error {
 	ccclogger.FromCtx(ctx).Infof("Applying schema migrations from %s", sourceURL)
 	m, err := s.newMigrate(s.schemaMigrationsTable, sourceURL)
 	if err != nil {
-		return errors.Wrap(err, "SpannerMigrationService.newMigrate()")
+		return errors.Wrap(err, "SpannerMigrator.newMigrate()")
 	}
 
 	if err := m.Up(); err != nil {
@@ -84,10 +87,12 @@ func (s *SpannerMigrator) MigrateUpSchema(ctx context.Context, sourceURL string)
 }
 
 // MigrateUpData will apply all data migrations from the sourceURL
+//
+// Use for DML migrations
 func (s *SpannerMigrator) MigrateUpData(ctx context.Context, sourceURL string) error {
 	ccclogger.FromCtx(ctx).Infof("Applying data migrations from %s", sourceURL)
 	if err := s.migrateUp(s.dataMigrationsTable, sourceURL); err != nil {
-		return errors.Wrap(err, "SpannerMigrationService.migrateUp()")
+		return errors.Wrap(err, "SpannerMigrator.migrateUp()")
 	}
 
 	return nil
@@ -96,13 +101,13 @@ func (s *SpannerMigrator) MigrateUpData(ctx context.Context, sourceURL string) e
 // MigrateDropSchema drops all objects in the schema
 func (s *SpannerMigrator) MigrateDropSchema(ctx context.Context, sourceURL string) error {
 	if err := s.drop(ctx); err != nil {
-		return errors.Wrapf(err, "SpannerMigrationService.drop(): %s", sourceURL)
+		return errors.Wrapf(err, "SpannerMigrator.drop(): %s", sourceURL)
 	}
 
 	return nil
 }
 
-// Close closes the SpannerMigrationService connections
+// Close closes the SpannerMigrator connections
 func (s *SpannerMigrator) Close() error {
 	s.client.Close()
 
@@ -116,7 +121,7 @@ func (s *SpannerMigrator) Close() error {
 func (s *SpannerMigrator) migrateUp(migrationsTable, sourceURL string) error {
 	m, err := s.newMigrate(migrationsTable, sourceURL)
 	if err != nil {
-		return errors.Wrap(err, "SpannerMigrationService.newMigrate()")
+		return errors.Wrap(err, "SpannerMigrator.newMigrate()")
 	}
 
 	if err := m.Up(); err != nil {
@@ -183,10 +188,10 @@ func (s *SpannerMigrator) drop(ctx context.Context) error {
 			Statements: stmts,
 		})
 		if err != nil {
-			return errors.Wrap(err, "SpannerMigrationService.admin.UpdateDatabaseDdl()")
+			return errors.Wrap(err, "SpannerMigrator.admin.UpdateDatabaseDdl()")
 		}
 		if err := op.Wait(ctx); err != nil {
-			return errors.Wrap(err, "SpannerMigrationService.admin.UpdateDatabaseDdl().Wait()")
+			return errors.Wrap(err, "SpannerMigrator.admin.UpdateDatabaseDdl().Wait()")
 		}
 	}
 
@@ -216,7 +221,7 @@ func (s *SpannerMigrator) viewDropStatements(ctx context.Context) ([]string, err
 
 		var stmt string
 		if err := row.Columns(&stmt); err != nil {
-			return nil, &database.Error{OrigErr: err}
+			return nil, errors.Wrap(err, "spanner.Row.Columns()")
 		}
 		stmts = append(stmts, stmt)
 	}
@@ -239,7 +244,7 @@ func (s *SpannerMigrator) foreignKeyDropStatements(ctx context.Context) ([]strin
 			AND NOT CONSTRAINT_SCHEMA IN('INFORMATION_SCHEMA', 'SPANNER_SYS')
 		ORDER BY tc.table_schema, tc.table_name, tc.constraint_name`
 
-	iter := s.client.ReadOnlyTransaction().Query(ctx, spanner.NewStatement(query))
+	iter := s.client.Single().Query(ctx, spanner.NewStatement(query))
 	defer iter.Stop()
 
 	var stmts []string
@@ -324,7 +329,7 @@ func (s *SpannerMigrator) tableDropStatements(ctx context.Context) ([]string, er
 		FROM d
 		ORDER BY depth DESC, table_name`
 
-	iter := s.client.ReadOnlyTransaction().Query(ctx, spanner.NewStatement(query))
+	iter := s.client.Single().Query(ctx, spanner.NewStatement(query))
 	defer iter.Stop()
 
 	var stmts []string
@@ -339,7 +344,7 @@ func (s *SpannerMigrator) tableDropStatements(ctx context.Context) ([]string, er
 
 		var stmt string
 		if err := row.Columns(&stmt); err != nil {
-			return nil, &database.Error{OrigErr: err}
+			return nil, errors.Wrap(err, "spanner.Row.Columns()")
 		}
 		stmts = append(stmts, stmt)
 	}
