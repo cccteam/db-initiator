@@ -24,14 +24,12 @@ func TestNewPostgresMigrator(t *testing.T) {
 	tests := []struct {
 		name                   string
 		migrationSourceDir     string
-		expectConnectError     bool
 		expectMigrateUpError   bool
 		expectMigrateDownError bool
 	}{
 		{
 			name:                   "SuccessfulConnectAndMigrate",
 			migrationSourceDir:     "file://testdata/postgres/migrations_connect_test",
-			expectConnectError:     false,
 			expectMigrateUpError:   false,
 			expectMigrateDownError: false,
 		},
@@ -48,18 +46,8 @@ func TestNewPostgresMigrator(t *testing.T) {
 			defer initialDB.Close()
 
 			// Execution: Call NewPostgresMigrator
-			pgMigrator, err := NewPostgresMigrator(pgContainer.unprivilegedUsername, pgContainer.password, pgContainer.host, pgContainer.port.Port(), tt.name)
+			pgMigrator := NewPostgresMigrator(pgContainer.unprivilegedUsername, pgContainer.password, pgContainer.host, pgContainer.port.Port(), tt.name)
 
-			if tt.expectConnectError {
-				if err == nil {
-					t.Fatalf("NewPostgresMigrator should have failed for db %s, but got nil error", tt.name)
-				}
-
-				return // End this subtest
-			}
-			if err != nil {
-				t.Fatalf("NewPostgresMigrator should succeed for db %s: %v", tt.name, err)
-			}
 			if pgMigrator == nil {
 				t.Fatalf("PostgresMigration should not be nil for db %s", tt.name)
 			}

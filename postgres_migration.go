@@ -15,12 +15,12 @@ var _ Migrator = (*PostgresMigrator)(nil)
 
 // NewPostgresMigrator returns a new [PostgresMigrator].
 // It does not attempt to create the database or schema.
-func NewPostgresMigrator(username, password, host, port, database string) (*PostgresMigrator, error) {
+func NewPostgresMigrator(username, password, host, port, database string) *PostgresMigrator {
 	connStr := PostgresConnStr(username, password, host, port, database)
 
 	return &PostgresMigrator{
 		connStr: connStr,
-	}, nil
+	}
 }
 
 // MigrateUp will migrate all the way up, applying all up migrations from the sourceURL
