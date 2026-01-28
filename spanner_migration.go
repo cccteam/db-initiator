@@ -101,8 +101,9 @@ func (s *SpannerMigrator) MigrateUpData(ctx context.Context, sourceURL string) e
 // This happens in the following order:
 //  1. Drop views
 //  2. Drop FK constraints
-//  3. Drop Indexes
-//  4. Drop tables
+//  3. Drop Search Indexes
+//  4. Drop Indexes
+//  5. Drop tables
 func (s *SpannerMigrator) MigrateDropSchema(ctx context.Context) error {
 	stmts := make([]string, 0, 10)
 	viewDropStatements, err := s.viewDropStatements(ctx)
@@ -116,6 +117,12 @@ func (s *SpannerMigrator) MigrateDropSchema(ctx context.Context) error {
 		return err
 	}
 	stmts = append(stmts, foreignKeyDropStatements...)
+
+	searchIndexDropStatements, err := s.searchIndexDropStatements(ctx)
+	if err != nil {
+		return err
+	}
+	stmts = append(stmts, searchIndexDropStatements...)
 
 	indexDropStatements, err := s.indexDropStatements(ctx)
 	if err != nil {
@@ -236,6 +243,38 @@ func (s *SpannerMigrator) foreignKeyDropStatements(ctx context.Context) ([]strin
 		WHERE tc.constraint_type = 'FOREIGN KEY'
 			AND NOT CONSTRAINT_SCHEMA IN('INFORMATION_SCHEMA', 'SPANNER_SYS')
 		ORDER BY tc.table_schema, tc.table_name, tc.constraint_name`
+
+	iter := s.client.Single().Query(ctx, spanner.NewStatement(query))
+	defer iter.Stop()
+
+	var stmts []string
+	for {
+		row, err := iter.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "spanner.RowIterator.Next()")
+		}
+
+		var stmt string
+		if err := row.Columns(&stmt); err != nil {
+			return nil, errors.Wrap(err, "spanner.Row.Columns()")
+		}
+		stmts = append(stmts, stmt)
+	}
+
+	return stmts, nil
+}
+
+// NOTE(zredinger): As of 1/26 spanner emulator sets the index_type to 'INDEX' vs using 'SEARCH'.
+func (s *SpannerMigrator) searchIndexDropStatements(ctx context.Context) ([]string, error) {
+	query := `
+		SELECT CONCAT('DROP SEARCH INDEX ` + "`" + `', idx.index_name, '` + "`" + `') AS ddl
+		FROM information_schema.indexes idx
+		WHERE idx.index_type = 'SEARCH'
+			AND NOT TABLE_SCHEMA IN('INFORMATION_SCHEMA', 'SPANNER_SYS')
+		ORDER BY idx.table_schema, idx.table_name, idx.index_name`
 
 	iter := s.client.Single().Query(ctx, spanner.NewStatement(query))
 	defer iter.Stop()
