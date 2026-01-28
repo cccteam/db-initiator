@@ -11,8 +11,16 @@ A Go library for database testing and migrations. Spin up ephemeral containerize
 
 | Database | Container | Migrations |
 |----------|-----------|------------|
-| PostgreSQL | ✓ | ✓ |
+| PostgreSQL | ✓ | ✓* |
 | Spanner | ✓ (emulator) | ✓ |
+
+#### *PostgreSQL Limitations
+
+Compared to the Spanner implementation, PostgreSQL currently has the following limitations:
+
+- No separate schema vs data migrations (single `MigrateUp` only)
+- No configurable migrations table name
+- `ConnectToPostgres` only supports `MigrateUp` (no down/drop migrations)
 
 ## Installation
 
