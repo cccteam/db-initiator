@@ -26,6 +26,7 @@ const (
 )
 
 // SpannerContainer represents a docker container running a spanner instance.
+// [SpannerContainer.Close] should be called to cleanup resources.
 type SpannerContainer struct {
 	testcontainers.Container
 	admin      *database.DatabaseAdminClient
@@ -38,7 +39,8 @@ type SpannerContainer struct {
 	dbCount int
 }
 
-// NewSpannerContainer returns a initialized SpannerContainer ready to run to create databases for unit tests
+// NewSpannerContainer returns a initialized [SpannerContainer] ready to run to create databases for unit tests.
+// [SpannerContainer.Close] should be called to cleanup resources.
 func NewSpannerContainer(ctx context.Context, imageVersion string) (*SpannerContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:        "gcr.io/cloud-spanner-emulator/emulator:" + imageVersion,
@@ -104,7 +106,7 @@ func (sc *SpannerContainer) CreateDatabase(ctx context.Context, dbName string) (
 	return db, nil
 }
 
-// Close cleans up open resouces
+// Close cleans up open resources
 func (sc *SpannerContainer) Close() error {
 	if err := sc.admin.Close(); err != nil {
 		return errors.Wrap(err, "database.DatabaseAdminClient.Close()")

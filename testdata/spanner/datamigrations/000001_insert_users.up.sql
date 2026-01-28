@@ -1,0 +1,1 @@
+INSERT INTO Users2 (Id, UserName, Firstname, Lastname, PasswordHash, Email) VALUES ('dagf', 'billy', 'Alice', 'alice@example.com', 'dadsfasdf', 'bill@cloud-team.com');
