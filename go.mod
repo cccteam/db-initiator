@@ -1,6 +1,6 @@
 module github.com/cccteam/db-initiator
 
-go 1.25.5
+go 1.25.6
 
 replace github.com/golang-migrate/migrate/v4 v4.19.1 => github.com/jtwatson/migrate/v4 v4.19.1-beta.0
 
@@ -65,7 +65,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/klauspost/compress v1.18.1 // indirect
+	github.com/klauspost/compress v1.18.3 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/lufia/plan9stats v0.0.0-20251013123823-9fd1530e3ec3 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
