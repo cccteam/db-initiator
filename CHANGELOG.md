@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/cccteam/db-initiator/compare/v0.3.2...v0.3.3) (2026-02-23)
+
+
+### Code Upgrade
+
+* Upgrade OpenTelemetry Go SDK pkg to address GO-2026-4394 ([#125](https://github.com/cccteam/db-initiator/issues/125)) ([503ba6a](https://github.com/cccteam/db-initiator/commit/503ba6a7bf1b02b785ae2fae111a60b44ff3f5a5))
+
 ## [0.3.2](https://github.com/cccteam/db-initiator/compare/v0.3.1...v0.3.2) (2026-02-09)
 
 
