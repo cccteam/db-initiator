@@ -3,6 +3,7 @@ package dbinitiator
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"strings"
 	"testing"
@@ -546,7 +547,7 @@ func genDBName() string {
 
 	for range 10 {
 		n, _ := rand.Int(rand.Reader, big.NewInt(26))
-		randStr.WriteString(string('a' + rune(n.Int64())))
+		_, _ = fmt.Fprintf(&randStr, "a%d", n.Int64())
 	}
 
 	return randStr.String()
