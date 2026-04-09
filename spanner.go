@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
-	"github.com/docker/go-connections/nat"
 	"github.com/go-playground/errors/v5"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -61,7 +60,7 @@ func NewSpannerContainer(ctx context.Context, imageVersion string) (*SpannerCont
 		return nil, errors.Wrap(err, "failed to get host for container")
 	}
 
-	externalPort, err := spannerC.MappedPort(ctx, nat.Port(defaultSpannerPort))
+	externalPort, err := spannerC.MappedPort(ctx, defaultSpannerPort)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get external port for exposed port %s", defaultSpannerPort)
 	}

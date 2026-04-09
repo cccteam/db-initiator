@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/network"
 )
 
 func TestSpanner_FullMigration(t *testing.T) {
@@ -145,7 +145,11 @@ func TestNewSpannerContainer(t *testing.T) {
 			if err != nil {
 				t.Fatalf("container.Ports() error = %v, wantErr %v", err, false)
 			}
-			if port, ok := ports[nat.Port(container.port)]; !ok {
+			port, err := network.ParsePort(container.port)
+			if err != nil {
+				t.Fatalf("network.ParsePort() error = %v, wantErr %v", err, false)
+			}
+			if port, ok := ports[port]; !ok {
 				t.Fatalf("container.Ports() does not contain %s", container.port)
 			} else if len(port) == 0 || port[0].HostPort == "" {
 				t.Fatalf("container.Ports() does not export 9010/tcp")

@@ -73,12 +73,13 @@ linters:
           allow:
             - $gostd
             - cloud.google.com/go/spanner
+            - github.com/cccteam/logger
             - github.com/docker/go-connections
             - github.com/go-playground/errors/v5
             - github.com/golang-migrate/migrate/v4
             - github.com/jackc/pgx-shopspring-decimal
             - github.com/jackc/pgx/v5
-            - github.com/cccteam/logger
+            - github.com/moby/moby/api/types/network
             - github.com/testcontainers/testcontainers-go
             - google.golang.org/api
             - google.golang.org/grpc
