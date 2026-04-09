@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.5](https://github.com/cccteam/db-initiator/compare/v0.3.4...v0.3.5) (2026-04-09)
+
+
+### Bug Fixes
+
+* address active Trivy incident ([#136](https://github.com/cccteam/db-initiator/issues/136)) ([b0f390b](https://github.com/cccteam/db-initiator/commit/b0f390b8728da24b39580b5924e66f467dad9ad3))
+* Fix breaking changes from testcontainers package ([#141](https://github.com/cccteam/db-initiator/issues/141)) ([dffaed7](https://github.com/cccteam/db-initiator/commit/dffaed7abf7262b855fc65bda0d8e554fdff20eb))
+
+
+### Code Upgrade
+
+* Upgrade Go dependencies ([#141](https://github.com/cccteam/db-initiator/issues/141)) ([dffaed7](https://github.com/cccteam/db-initiator/commit/dffaed7abf7262b855fc65bda0d8e554fdff20eb))
+
 ## [0.3.4](https://github.com/cccteam/db-initiator/compare/v0.3.3...v0.3.4) (2026-03-16)
 
 
