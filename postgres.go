@@ -6,11 +6,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/go-playground/errors/v5"
 	shopspring "github.com/jackc/pgx-shopspring-decimal"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/moby/moby/api/types/network"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres" // database driver for the migrate package
 	_ "github.com/golang-migrate/migrate/v4/source/file"       // up/down script file source driver for the migrate package
@@ -28,7 +28,7 @@ const (
 type PostgresContainer struct {
 	testcontainers.Container
 	host                 string
-	port                 nat.Port
+	port                 network.Port
 	superUsername        string
 	unprivilegedUsername string
 	password             string
@@ -77,7 +77,7 @@ func initPostgresContainer(ctx context.Context, imageVersion string) (*PostgresC
 		return nil, errors.Wrapf(err, "failed to create container using ContainerRequest=%v", req)
 	}
 
-	externalPort, err := postgresC.MappedPort(ctx, nat.Port(defaultPostgresPort))
+	externalPort, err := postgresC.MappedPort(ctx, defaultPostgresPort)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get external port for exposed port %s", defaultPostgresPort)
 	}
