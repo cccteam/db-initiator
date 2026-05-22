@@ -36,7 +36,7 @@ func (p *PostgresMigrator) MigrateUpSchema(_ context.Context, sourceURL string) 
 	if err != nil {
 		return errors.Wrapf(err, "os.ReadDir(): %s", dir)
 	}
-	if !slices.ContainsFunc(entries, func(e os.DirEntry) bool { return filepath.Ext(e.Name()) == ".sql" }) {
+	if !slices.ContainsFunc(entries, func(e os.DirEntry) bool { return filepath.Ext(e.Name()) == sqlExt }) {
 		return nil
 	}
 

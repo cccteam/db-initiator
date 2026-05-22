@@ -2,6 +2,8 @@ package dbinitiator
 
 import "context"
 
+const sqlExt = ".sql"
+
 // Migrator is an interface for database migration.
 type Migrator interface {
 	// MigrateUpSchema applies all up migrations for the database schema.
