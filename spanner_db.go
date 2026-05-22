@@ -3,6 +3,10 @@ package dbinitiator
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
 
 	"cloud.google.com/go/spanner"
 	spannerDB "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -82,6 +86,17 @@ func (db *SpannerDB) MigrateUp(sourceURL ...string) error {
 	}
 
 	for _, source := range sourceURL {
+		// Skip empty directories so that we can allow a directory to be empty
+		// for the case of draft, or temporary migrations
+		dir := strings.TrimPrefix(source, "file://")
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			return errors.Wrapf(err, "os.ReadDir(): %s", dir)
+		}
+		if !slices.ContainsFunc(entries, func(e os.DirEntry) bool { return filepath.Ext(e.Name()) == ".sql" }) {
+			continue
+		}
+
 		if err := db.migrateUp(source, spannerInstance); err != nil {
 			return err
 		}
