@@ -155,6 +155,13 @@ func TestSpannerMigrator_MigrateUpSchema(t *testing.T) {
 			},
 		},
 		{
+			name: "empty migration directory",
+			args: args{
+				sourceURL: "file://testdata/spanner/empty",
+			},
+			wantErr: false,
+		},
+		{
 			name: "migration source does not exist",
 			args: args{
 				sourceURL: "file://testdata/spanner/nonexistent",
@@ -303,6 +310,14 @@ func TestSpannerMigrator_MigrateUpData(t *testing.T) {
 					query: `SELECT EXISTS(SELECT 1 FROM Products WHERE SEARCH(Name_Tokens, 'laptop'))`,
 				},
 			},
+		},
+		{
+			name: "empty data migration directory",
+			args: args{
+				schemaSourceURL: "file://testdata/spanner/migrations",
+				dataSourceURL:   "file://testdata/spanner/empty",
+			},
+			wantErr: false,
 		},
 		{
 			name: "nonexistent data source",

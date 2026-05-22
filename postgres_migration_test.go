@@ -33,6 +33,12 @@ func TestNewPostgresMigrator(t *testing.T) {
 			expectMigrateUpError:   false,
 			expectMigrateDownError: false,
 		},
+		{
+			name:                   "EmptyMigrationDirectory",
+			migrationSourceDir:     "file://testdata/postgres/empty",
+			expectMigrateUpError:   false,
+			expectMigrateDownError: false,
+		},
 	}
 
 	for _, tt := range tests {

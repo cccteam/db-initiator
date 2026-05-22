@@ -2,6 +2,10 @@ package dbinitiator
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/go-playground/errors/v5"
 	"github.com/golang-migrate/migrate/v4"
@@ -25,6 +29,17 @@ func NewPostgresMigrator(username, password, host, port, database string) *Postg
 
 // MigrateUp will migrate all the way up, applying all up migrations from the sourceURL
 func (p *PostgresMigrator) MigrateUpSchema(_ context.Context, sourceURL string) error {
+	// Skip directories with no SQL migration files so that we can allow a directory
+	// to be empty for the case of draft, or temporary migrations
+	dir := strings.TrimPrefix(sourceURL, "file://")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return errors.Wrapf(err, "os.ReadDir(): %s", dir)
+	}
+	if !slices.ContainsFunc(entries, func(e os.DirEntry) bool { return filepath.Ext(e.Name()) == ".sql" }) {
+		return nil
+	}
+
 	m, err := migrate.New(sourceURL, p.connStr)
 	if err != nil {
 		return errors.Wrapf(err, "migrate.New(): fileURL=%s and connectionURL=%s", sourceURL, p.connStr)
