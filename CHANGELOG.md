@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.8](https://github.com/cccteam/db-initiator/compare/v0.3.7...v0.3.8) (2026-05-27)
+
+
+### Code Upgrade
+
+* dependencies ([#152](https://github.com/cccteam/db-initiator/issues/152)) ([a9dc69b](https://github.com/cccteam/db-initiator/commit/a9dc69bf651d50822079639efe30280018e64646))
+
 ## [0.3.7](https://github.com/cccteam/db-initiator/compare/v0.3.6...v0.3.7) (2026-05-11)
 
 
