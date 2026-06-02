@@ -2,6 +2,7 @@ package dbinitiator
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-playground/errors/v5"
 	"github.com/golang-migrate/migrate/v4"
@@ -15,12 +16,16 @@ var _ Migrator = (*PostgresMigrator)(nil)
 
 // NewPostgresMigrator returns a new [PostgresMigrator].
 // It does not attempt to create the database or schema.
-func NewPostgresMigrator(username, password, host, port, database string) *PostgresMigrator {
-	connStr := PostgresConnStr(username, password, host, port, database)
-
-	return &PostgresMigrator{
-		connStr: connStr,
+func NewPostgresMigrator(username, password, host, port, database, sslMode string) *PostgresMigrator {
+	if sslMode == "" {
+		sslMode = "require"
 	}
+
+	connStr := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
+		username, password, host, port, database, sslMode,
+	)
+
+	return &PostgresMigrator{connStr: connStr}
 }
 
 // MigrateUp will migrate all the way up, applying all up migrations from the sourceURL
