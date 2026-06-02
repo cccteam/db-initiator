@@ -155,7 +155,7 @@ func TestPostgres_FullMigrationWithNewPostgresDatabase(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			db, err := NewPostgresDatabase(ctx, pgC.superUsername, pgC.password, pgC.host, pgC.port.Port(), tt.name, pgC.unprivilegedUsername)
+			db, err := NewPostgresDatabase(ctx, pgC.superUsername, pgC.password, pgC.host, pgC.port.Port(), tt.name, pgC.unprivilegedUsername, "disable")
 			if err != nil {
 				t.Fatalf("NewPostgresDatabase() error = %v", err)
 			}

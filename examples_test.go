@@ -105,7 +105,7 @@ func ExamplePostgresMigrator_MigrateUpSchema() {
 	}
 	defer db.Close()
 
-	migrator := NewPostgresMigrator(container.superUsername, "password", container.host, container.port.Port(), db.dbName)
+	migrator := NewPostgresMigrator(container.superUsername, "password", container.host, container.port.Port(), db.dbName, "disable")
 
 	if err := migrator.MigrateUpSchema(ctx, "file://testdata/postgres/migrations"); err != nil {
 		panic(err)
