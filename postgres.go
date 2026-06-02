@@ -116,7 +116,7 @@ func (pc *PostgresContainer) CreateDatabase(ctx context.Context, dbName string) 
 	}
 
 	// create extension in the newly created table
-	db, err = openDB(ctx, PostgresConnStr(pc.superUsername, pc.password, pc.host, pc.port.Port(), dbName))
+	db, err = openDB(ctx, PostgresConnStr(pc.superUsername, pc.password, pc.host, pc.port.Port(), dbName, "disable"))
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (pc *PostgresContainer) CreateDatabase(ctx context.Context, dbName string) 
 		return nil, errors.Wrapf(err, "failed to create extension btree_gist in database=%q", dbName)
 	}
 
-	u, err := openDB(ctx, PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName))
+	u, err := openDB(ctx, PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName, "disable"))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to database=%q with %s", dbName, pc.unprivilegedUsername)
 	}
@@ -145,7 +145,7 @@ func (pc *PostgresContainer) CreateDatabase(ctx context.Context, dbName string) 
 		Pool:    u,
 		dbName:  dbName,
 		schema:  pc.unprivilegedUsername,
-		connStr: PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName),
+		connStr: PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName, "disable"),
 	}, nil
 }
 
@@ -164,7 +164,7 @@ func (pc *PostgresContainer) superUserConnection(ctx context.Context, database s
 	pool, ok := pc.superUserConnections[database]
 	if !ok || pool == nil || pool.Ping(ctx) != nil {
 		var err error
-		pool, err = openDB(ctx, PostgresConnStr(pc.superUsername, pc.password, pc.host, pc.port.Port(), database))
+		pool, err = openDB(ctx, PostgresConnStr(pc.superUsername, pc.password, pc.host, pc.port.Port(), database, "disable"))
 		if err != nil {
 			return nil, err
 		}
@@ -214,13 +214,21 @@ func (pc *PostgresContainer) validDatabaseName(dbName string) string {
 	return dbName
 }
 
-func PostgresConnStr(username, password, host, port, database string) string {
-	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+// PostgresConnStr builds a postgres connection URL.
+// sslMode sets the sslmode query parameter (e.g. "require", "verify-full", "disable").
+// Pass an empty string to use the default, which is "require".
+func PostgresConnStr(username, password, host, port, database, sslMode string) string {
+	if sslMode == "" {
+		sslMode = "require"
+	}
+
+	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
 		username,
 		password,
 		host,
 		port,
 		database,
+		sslMode,
 	)
 }
 
