@@ -16,10 +16,10 @@ var _ Migrator = (*PostgresMigrator)(nil)
 // NewPostgresMigrator returns a new [PostgresMigrator].
 // It does not attempt to create the database or schema.
 //
-// sslMode sets the sslmode query parameter (e.g. "require", "verify-full", "disable").
-// Pass an empty string to use the default, which is "require".
-// Use "disable" only for local test containers.
-func NewPostgresMigrator(username, password, host, port, database, sslMode string) *PostgresMigrator {
+// sslMode sets the sslmode query parameter.
+// Pass an empty string to use the default, which is [SSLModeRequire].
+// Use [SSLModeDisable] only for local test containers.
+func NewPostgresMigrator(username, password, host, port, database string, sslMode SSLMode) *PostgresMigrator {
 	return &PostgresMigrator{
 		connStr: PostgresConnStr(username, password, host, port, database, sslMode),
 	}

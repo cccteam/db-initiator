@@ -46,7 +46,7 @@ func TestNewPostgresMigrator(t *testing.T) {
 			defer initialDB.Close()
 
 			// Execution: Call NewPostgresMigrator
-			pgMigrator := NewPostgresMigrator(pgContainer.unprivilegedUsername, pgContainer.password, pgContainer.host, pgContainer.port.Port(), tt.name, "disable")
+			pgMigrator := NewPostgresMigrator(pgContainer.unprivilegedUsername, pgContainer.password, pgContainer.host, pgContainer.port.Port(), tt.name, SSLModeDisable)
 
 			if pgMigrator == nil {
 				t.Fatalf("PostgresMigration should not be nil for db %s", tt.name)

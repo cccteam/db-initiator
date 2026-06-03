@@ -18,7 +18,7 @@ type PostgresDatabase struct {
 }
 
 // NewPostgresDatabase creates a new database and schema, then connects to it.
-func NewPostgresDatabase(ctx context.Context, username, password, host, port, databaseToCreate, schemaToCreate, sslMode string) (*PostgresDatabase, error) {
+func NewPostgresDatabase(ctx context.Context, username, password, host, port, databaseToCreate, schemaToCreate string, sslMode SSLMode) (*PostgresDatabase, error) {
 	// a. Construct connection string for a default database (e.g., "postgres")
 	defaultDBConnStr := PostgresConnStr(username, password, host, port, "postgres", sslMode)
 
