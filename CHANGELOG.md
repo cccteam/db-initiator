@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.9](https://github.com/cccteam/db-initiator/compare/v0.3.8...v0.3.9) (2026-06-04)
+
+
+### Bug Fixes
+
+* SSLMode was defaulted to disable ([#156](https://github.com/cccteam/db-initiator/issues/156)) ([e6278c9](https://github.com/cccteam/db-initiator/commit/e6278c9240cc1abd1227d2aac0d425894425f208))
+
 ## [0.3.8](https://github.com/cccteam/db-initiator/compare/v0.3.7...v0.3.8) (2026-05-27)
 
 
