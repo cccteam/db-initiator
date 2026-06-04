@@ -18,6 +18,24 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+// SSLMode represents the sslmode parameter for PostgreSQL connections.
+type SSLMode string
+
+const (
+	// SSLModeDisable disables SSL entirely. Use only for local test containers.
+	SSLModeDisable SSLMode = "disable"
+	// SSLModeAllow prefers non-SSL but will use SSL if the server requires it.
+	SSLModeAllow SSLMode = "allow"
+	// SSLModePrefer prefers SSL but will use non-SSL if the server does not support it.
+	SSLModePrefer SSLMode = "prefer"
+	// SSLModeRequire requires SSL but does not verify the server certificate.
+	SSLModeRequire SSLMode = "require"
+	// SSLModeVerifyCA requires SSL and verifies the server certificate is signed by a trusted CA.
+	SSLModeVerifyCA SSLMode = "verify-ca"
+	// SSLModeVerifyFull requires SSL, verifies the CA, and verifies the server hostname matches the certificate.
+	SSLModeVerifyFull SSLMode = "verify-full"
+)
+
 const (
 	defaultPostgresHost     = "localhost"
 	defaultPostgresPort     = "5432"
@@ -116,7 +134,7 @@ func (pc *PostgresContainer) CreateDatabase(ctx context.Context, dbName string) 
 	}
 
 	// create extension in the newly created table
-	db, err = openDB(ctx, PostgresConnStr(pc.superUsername, pc.password, pc.host, pc.port.Port(), dbName))
+	db, err = openDB(ctx, PostgresConnStr(pc.superUsername, pc.password, pc.host, pc.port.Port(), dbName, SSLModeDisable))
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +148,7 @@ func (pc *PostgresContainer) CreateDatabase(ctx context.Context, dbName string) 
 		return nil, errors.Wrapf(err, "failed to create extension btree_gist in database=%q", dbName)
 	}
 
-	u, err := openDB(ctx, PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName))
+	u, err := openDB(ctx, PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName, SSLModeDisable))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to database=%q with %s", dbName, pc.unprivilegedUsername)
 	}
@@ -145,7 +163,7 @@ func (pc *PostgresContainer) CreateDatabase(ctx context.Context, dbName string) 
 		Pool:    u,
 		dbName:  dbName,
 		schema:  pc.unprivilegedUsername,
-		connStr: PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName),
+		connStr: PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName, SSLModeDisable),
 	}, nil
 }
 
@@ -164,7 +182,7 @@ func (pc *PostgresContainer) superUserConnection(ctx context.Context, database s
 	pool, ok := pc.superUserConnections[database]
 	if !ok || pool == nil || pool.Ping(ctx) != nil {
 		var err error
-		pool, err = openDB(ctx, PostgresConnStr(pc.superUsername, pc.password, pc.host, pc.port.Port(), database))
+		pool, err = openDB(ctx, PostgresConnStr(pc.superUsername, pc.password, pc.host, pc.port.Port(), database, SSLModeDisable))
 		if err != nil {
 			return nil, err
 		}
@@ -214,13 +232,21 @@ func (pc *PostgresContainer) validDatabaseName(dbName string) string {
 	return dbName
 }
 
-func PostgresConnStr(username, password, host, port, database string) string {
-	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+// PostgresConnStr builds a postgres connection URL.
+// sslMode sets the sslmode query parameter.
+// Pass an empty string to use the default, which is [SSLModeRequire].
+func PostgresConnStr(username, password, host, port, database string, sslMode SSLMode) string {
+	if sslMode == "" {
+		sslMode = SSLModeRequire
+	}
+
+	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
 		username,
 		password,
 		host,
 		port,
 		database,
+		string(sslMode),
 	)
 }
 

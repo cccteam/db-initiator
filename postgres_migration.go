@@ -15,11 +15,13 @@ var _ Migrator = (*PostgresMigrator)(nil)
 
 // NewPostgresMigrator returns a new [PostgresMigrator].
 // It does not attempt to create the database or schema.
-func NewPostgresMigrator(username, password, host, port, database string) *PostgresMigrator {
-	connStr := PostgresConnStr(username, password, host, port, database)
-
+//
+// sslMode sets the sslmode query parameter.
+// Pass an empty string to use the default, which is [SSLModeRequire].
+// Use [SSLModeDisable] only for local test containers.
+func NewPostgresMigrator(username, password, host, port, database string, sslMode SSLMode) *PostgresMigrator {
 	return &PostgresMigrator{
-		connStr: connStr,
+		connStr: PostgresConnStr(username, password, host, port, database, sslMode),
 	}
 }
 
