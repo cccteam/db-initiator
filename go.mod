@@ -9,9 +9,9 @@ require (
 	github.com/go-playground/errors/v5 v5.4.0
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/jackc/pgx-shopspring-decimal v0.0.0-20220624020537-1d36b5a1853e
-	github.com/jackc/pgx/v5 v5.9.2
+	github.com/jackc/pgx/v5 v5.10.0
 	github.com/testcontainers/testcontainers-go v0.42.0
-	google.golang.org/api v0.281.0
+	google.golang.org/api v0.283.0
 	google.golang.org/grpc v1.81.1
 )
 
