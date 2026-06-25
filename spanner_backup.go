@@ -54,12 +54,14 @@ func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targ
 
 func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adminpb.Backup, error) {
 	fmt.Printf("preparing to back up '%s' database\n", sourceDatabase)
+	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
+	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, sourceDatabase)
 	expire := time.Now().AddDate(0, 0, 7).UTC() // Will back up for 1 week
 	req := &adminpb.CreateBackupRequest{
-		Parent:   fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID),
+		Parent:   instance,
 		BackupId: sourceDatabase + "backup",
 		Backup: &adminpb.Backup{
-			Database:   s.SourceConnectionString,
+			Database:   database,
 			ExpireTime: timestamppb.New(expire),
 		},
 	}
@@ -135,14 +137,37 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 		return errors.Wrap(err, "s.admin.RestoreDatabase()")
 	}
 
-	resp, err := op.Wait(ctx)
-	if err != nil {
-		return errors.Wrap(err, "op.Wait()")
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			restore, err := op.Poll(ctx)
+			if err != nil {
+				log.Println("polling error: ", err)
+
+				continue
+			}
+			meta, err := op.Metadata()
+			if err != nil {
+				log.Println("could not get metadata")
+
+				continue
+			}
+			if meta != nil {
+				progress := meta.GetProgress()
+				fmt.Printf("state: %s  progress: %d%%\n", meta.Name, progress.GetProgressPercent())
+			}
+			if op.Done() {
+				fmt.Printf("database restored: %s\n", restore.Name)
+
+				return nil
+			}
+		}
 	}
-
-	fmt.Printf("database %s restored successfully\n", resp.Name)
-
-	return nil
 }
 
 func (s *SpannerBackup) BackupRestore(ctx context.Context, source, destination string) error {
