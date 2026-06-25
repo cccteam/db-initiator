@@ -59,7 +59,7 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 	expire := time.Now().AddDate(0, 0, 7).UTC() // Will back up for 1 week
 	req := &adminpb.CreateBackupRequest{
 		Parent:   instance,
-		BackupId: sourceDatabase + "backup",
+		BackupId: sourceDatabase + "_backup_" + time.Now().UTC().Format("20060102_150405"),
 		Backup: &adminpb.Backup{
 			Database:   database,
 			ExpireTime: timestamppb.New(expire),
@@ -181,7 +181,7 @@ func (s *SpannerBackup) BackupRestore(ctx context.Context, source, destination s
 	if err := s.Restore(ctx, backup, destination); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
