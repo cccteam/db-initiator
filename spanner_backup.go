@@ -44,7 +44,7 @@ func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targ
 		SourceConnectionString: srcDbStr,
 		TargetConnectionString: tgtDbStr,
 		SourceDb:               sourceDb,
-		TargetDb:               tgtDbStr,
+		TargetDb:               targetDb,
 		admin:                  adminClient,
 		client:                 client,
 		ProjectID:              projectID,
@@ -108,7 +108,7 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 func (s *SpannerBackup) drop(ctx context.Context, targetDatabase string) error {
 	fmt.Printf("dropping database %s\n", targetDatabase)
 	req := &adminpb.DropDatabaseRequest{
-		Database: s.TargetConnectionString + targetDatabase,
+		Database: s.TargetConnectionString,
 	}
 	err := s.admin.DropDatabase(ctx, req)
 	if err != nil {
