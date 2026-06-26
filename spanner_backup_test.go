@@ -51,10 +51,6 @@ func TestNewSpannerBackup(t *testing.T) {
 				}
 			})
 
-			wantSource := "projects/" + tt.args.projectID + "/instances/" + tt.args.instanceID + "/databases/" + tt.args.sourceDb
-			if b.SourceConnectionString != wantSource {
-				t.Errorf("SourceConnectionString = %q, want %q", b.SourceConnectionString, wantSource)
-			}
 			wantTarget := "projects/" + tt.args.projectID + "/instances/" + tt.args.instanceID + "/databases/" + tt.args.targetDb
 			if b.TargetConnectionString != wantTarget {
 				t.Errorf("TargetConnectionString = %q, want %q", b.TargetConnectionString, wantTarget)

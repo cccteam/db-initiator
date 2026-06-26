@@ -6,9 +6,7 @@ import (
 	"log"
 	"time"
 
-	"cloud.google.com/go/spanner"
 	spannerDB "cloud.google.com/go/spanner/admin/database/apiv1"
-	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"github.com/go-playground/errors/v5"
 	"google.golang.org/api/option"
@@ -18,38 +16,26 @@ import (
 )
 
 type SpannerBackup struct {
-	SourceConnectionString string
 	TargetConnectionString string
 	SourceDb               string
 	TargetDb               string
 	ProjectID              string
 	InstanceID             string
 	admin                  *spannerDB.DatabaseAdminClient
-	client                 *spanner.Client
 }
 
 func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targetDb string, opts ...option.ClientOption) (*SpannerBackup, error) {
-	srcDbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, sourceDb)
 	tgtDbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, targetDb)
-	client, err := spanner.NewClient(ctx, srcDbStr, opts...)
-	if err != nil {
-		return nil, errors.Wrap(err, "spanner.NewClient()")
-	}
-
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
 	if err != nil {
-		client.Close()
-
 		return nil, errors.Wrap(err, "spannerDB.NewDatabaseAdminClient()")
 	}
 
 	return &SpannerBackup{
-		SourceConnectionString: srcDbStr,
 		TargetConnectionString: tgtDbStr,
 		SourceDb:               sourceDb,
 		TargetDb:               targetDb,
 		admin:                  adminClient,
-		client:                 client,
 		ProjectID:              projectID,
 		InstanceID:             instanceID,
 	}, nil
@@ -61,7 +47,7 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, sourceDatabase)
 	// Check if db exists
 	log.Printf("checking that database %s exists\n", sourceDatabase)
-	_, err := s.admin.GetDatabase(ctx, &databasepb.GetDatabaseRequest{
+	_, err := s.admin.GetDatabase(ctx, &adminpb.GetDatabaseRequest{
 		Name: database,
 	})
 	if err != nil {
@@ -109,10 +95,10 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 			}
 			if meta != nil {
 				progress := meta.GetProgress()
-				fmt.Printf("state: %s  progress: %d%%\n", meta.Database, progress.GetProgressPercent())
+				log.Printf("state: %s  progress: %d%%\n", meta.Database, progress.GetProgressPercent())
 			}
 			if op.Done() {
-				fmt.Printf("backup complete: %s  size: %d bytes\n", backup.Name, backup.SizeBytes)
+				log.Printf("backup complete: %s  size: %d bytes\n", backup.Name, backup.SizeBytes)
 
 				return backup, nil
 			}
@@ -121,7 +107,7 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 }
 
 func (s *SpannerBackup) drop(ctx context.Context, targetDatabase string) error {
-	fmt.Printf("dropping database %s\n", targetDatabase)
+	log.Printf("dropping database %s\n", s.TargetDb)
 	req := &adminpb.DropDatabaseRequest{
 		Database: s.TargetConnectionString,
 	}
@@ -129,7 +115,7 @@ func (s *SpannerBackup) drop(ctx context.Context, targetDatabase string) error {
 	if err != nil {
 		return errors.Wrap(err, "s.admin.DropDatabase()")
 	}
-	fmt.Printf("database %s dropped\n", targetDatabase)
+	log.Printf("database %s dropped\n", targetDatabase)
 
 	return nil
 }
@@ -146,7 +132,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 		},
 	}
 
-	fmt.Printf("restoring %s\n", req.Source)
+	log.Printf("restoring %s\n", req.Source)
 	op, err := s.admin.RestoreDatabase(ctx, req)
 	if err != nil {
 		return errors.Wrap(err, "s.admin.RestoreDatabase()")
@@ -174,10 +160,10 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 			}
 			if meta != nil {
 				progress := meta.GetProgress()
-				fmt.Printf("state: %s  progress: %d%%\n", meta.Name, progress.GetProgressPercent())
+				log.Printf("state: %s  progress: %d%%\n", meta.Name, progress.GetProgressPercent())
 			}
 			if op.Done() {
-				fmt.Printf("database restored: %s\n", restore.Name)
+				log.Printf("database restored: %s\n", restore.Name)
 
 				return nil
 			}
@@ -201,7 +187,6 @@ func (s *SpannerBackup) BackupRestore(ctx context.Context, source, destination s
 }
 
 func (s *SpannerBackup) Close() error {
-	s.client.Close()
 	if err := s.admin.Close(); err != nil {
 		return err
 	}
