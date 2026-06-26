@@ -8,9 +8,12 @@ import (
 
 	"cloud.google.com/go/spanner"
 	spannerDB "cloud.google.com/go/spanner/admin/database/apiv1"
+	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	"github.com/go-playground/errors/v5"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -53,9 +56,21 @@ func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targ
 }
 
 func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adminpb.Backup, error) {
-	fmt.Printf("preparing to back up '%s' database\n", sourceDatabase)
+	log.Printf("preparing to back up '%s' database\n", sourceDatabase)
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
 	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, sourceDatabase)
+	// Check if db exists
+	log.Printf("checking that database %s exists\n", sourceDatabase)
+	_, err := s.admin.GetDatabase(ctx, &databasepb.GetDatabaseRequest{
+		Name: database,
+	})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			log.Printf("database %s does not exist\n", sourceDatabase)
+
+			return nil, errors.Wrap(err, "s.admin.GetDatabase()")
+		}
+	}
 	expire := time.Now().AddDate(0, 0, 7).UTC() // Will back up for 1 week
 	req := &adminpb.CreateBackupRequest{
 		Parent:   instance,
@@ -65,7 +80,7 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 			ExpireTime: timestamppb.New(expire),
 		},
 	}
-	fmt.Printf("generated backup request for %s\n", sourceDatabase)
+	log.Printf("generated backup request for %s\n", sourceDatabase)
 	op, err := s.admin.CreateBackup(ctx, req)
 	if err != nil {
 		return nil, errors.Wrap(err, "s.admin.CreateBackup()")
