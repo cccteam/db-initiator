@@ -18,7 +18,6 @@ import (
 type SpannerBackup struct {
 	TargetConnectionString string
 	SourceDb               string
-	TargetDb               string
 	ProjectID              string
 	InstanceID             string
 	admin                  *spannerDB.DatabaseAdminClient
@@ -34,25 +33,24 @@ func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targ
 	return &SpannerBackup{
 		TargetConnectionString: tgtDbStr,
 		SourceDb:               sourceDb,
-		TargetDb:               targetDb,
 		admin:                  adminClient,
 		ProjectID:              projectID,
 		InstanceID:             instanceID,
 	}, nil
 }
 
-func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adminpb.Backup, error) {
-	log.Printf("preparing to back up '%s' database\n", sourceDatabase)
+func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
+	log.Printf("preparing to back up '%s' database\n", s.SourceDb)
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
-	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, sourceDatabase)
+	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
 	// Check if db exists
-	log.Printf("checking that database %s exists\n", sourceDatabase)
+	log.Printf("checking that database %s exists\n", s.SourceDb)
 	_, err := s.admin.GetDatabase(ctx, &adminpb.GetDatabaseRequest{
 		Name: database,
 	})
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			log.Printf("database %s does not exist\n", sourceDatabase)
+			log.Printf("database %s does not exist\n", s.SourceDb)
 
 			return nil, errors.Wrap(err, "s.admin.GetDatabase()")
 		}
@@ -60,13 +58,13 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 	expire := time.Now().AddDate(0, 0, 7).UTC() // Will back up for 1 week
 	req := &adminpb.CreateBackupRequest{
 		Parent:   instance,
-		BackupId: sourceDatabase + "_backup_" + time.Now().UTC().Format("20060102_150405"),
+		BackupId: s.SourceDb + "_backup_" + time.Now().UTC().Format("20060102_150405"),
 		Backup: &adminpb.Backup{
 			Database:   database,
 			ExpireTime: timestamppb.New(expire),
 		},
 	}
-	log.Printf("generated backup request for %s\n", sourceDatabase)
+	log.Printf("generated backup request for %s\n", s.SourceDb)
 	op, err := s.admin.CreateBackup(ctx, req)
 	if err != nil {
 		return nil, errors.Wrap(err, "s.admin.CreateBackup()")
@@ -107,7 +105,7 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 }
 
 func (s *SpannerBackup) drop(ctx context.Context, targetDatabase string) error {
-	log.Printf("dropping database %s\n", s.TargetDb)
+	log.Printf("dropping database %s\n", targetDatabase)
 	req := &adminpb.DropDatabaseRequest{
 		Database: s.TargetConnectionString,
 	}
@@ -172,7 +170,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 }
 
 func (s *SpannerBackup) BackupRestore(ctx context.Context, source, destination string) error {
-	backup, err := s.Backup(ctx, source)
+	backup, err := s.Backup(ctx)
 	if err != nil {
 		log.Println("error backing up ", err)
 

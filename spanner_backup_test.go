@@ -55,12 +55,6 @@ func TestNewSpannerBackup(t *testing.T) {
 			if b.TargetConnectionString != wantTarget {
 				t.Errorf("TargetConnectionString = %q, want %q", b.TargetConnectionString, wantTarget)
 			}
-			if b.SourceDb != tt.args.sourceDb {
-				t.Errorf("SourceDb = %q, want %q", b.SourceDb, tt.args.sourceDb)
-			}
-			if b.TargetDb != tt.args.targetDb {
-				t.Errorf("TargetDb = %q, want %q", b.TargetDb, tt.args.targetDb)
-			}
 			if b.ProjectID != tt.args.projectID {
 				t.Errorf("ProjectID = %q, want %q", b.ProjectID, tt.args.projectID)
 			}
@@ -114,7 +108,7 @@ func TestSpannerBackup_Backup(t *testing.T) {
 			}
 			t.Cleanup(func() { _ = b.Close() })
 
-			backup, err := b.Backup(ctx, tt.args.sourceDatabase)
+			backup, err := b.Backup(ctx)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("SpannerBackup.Backup() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -202,7 +196,7 @@ func TestSpannerBackup_Restore(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = b.Close() })
 
-	backup, err := b.Backup(ctx, sourceName)
+	backup, err := b.Backup(ctx)
 	if err != nil {
 		t.Fatalf("SpannerBackup.Backup(): %s", err)
 	}
@@ -237,7 +231,7 @@ func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 
-	if _, err := b.Backup(canceledCtx, sourceName); err == nil {
+	if _, err := b.Backup(canceledCtx); err == nil {
 		t.Fatal("SpannerBackup.Backup() with canceled context error = nil, want error")
 	}
 }
