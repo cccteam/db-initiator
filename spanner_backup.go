@@ -85,7 +85,7 @@ func (s *SpannerBackup) Backup(ctx context.Context, sourceDatabase string) (*adm
 	if err != nil {
 		return nil, errors.Wrap(err, "s.admin.CreateBackup()")
 	}
-	fmt.Println("running backup...")
+	log.Println("running backup...")
 
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
