@@ -94,7 +94,7 @@ func (s *SpannerMigrator) WithDataMigrationsTable(table string) *SpannerMigrator
 // Use for DDL migrations
 func (s *SpannerMigrator) MigrateUpSchema(ctx context.Context, sourceURL string) error {
 	ccclogger.FromCtx(ctx).Infof("Applying schema migrations from %s", sourceURL)
-	if err := s.migrateUp(s.schemaMigrationsTable, sourceURL); err != nil {
+	if err := s.migrateUp(s.schemaMigrationsTable, sourceURL, s.versionOverrideConfig); err != nil {
 		return errors.Wrap(err, "SpannerMigrator.migrateUp()")
 	}
 
@@ -106,7 +106,7 @@ func (s *SpannerMigrator) MigrateUpSchema(ctx context.Context, sourceURL string)
 // Use for DML migrations
 func (s *SpannerMigrator) MigrateUpData(ctx context.Context, sourceURL string) error {
 	ccclogger.FromCtx(ctx).Infof("Applying data migrations from %s", sourceURL)
-	if err := s.migrateUp(s.dataMigrationsTable, sourceURL); err != nil {
+	if err := s.migrateUp(s.dataMigrationsTable, sourceURL, VersionOverrideConfig{shouldOverride: false}); err != nil {
 		return errors.Wrap(err, "SpannerMigrator.migrateUp()")
 	}
 
@@ -182,7 +182,7 @@ func (s *SpannerMigrator) Close() error {
 	return nil
 }
 
-func (s *SpannerMigrator) migrateUp(migrationsTable, sourceURL string) error {
+func (s *SpannerMigrator) migrateUp(migrationsTable, sourceURL string, versionOverride VersionOverrideConfig) error {
 	m, err := s.newMigrate(migrationsTable, sourceURL)
 	if err != nil {
 		return errors.Wrap(err, "SpannerMigrator.newMigrate()")
@@ -192,8 +192,8 @@ func (s *SpannerMigrator) migrateUp(migrationsTable, sourceURL string) error {
 		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", sourceURL)
 	}
 
-	if s.versionOverrideConfig.shouldOverride {
-		if err := m.Force(s.versionOverrideConfig.overrideVersion); err != nil {
+	if versionOverride.shouldOverride {
+		if err := m.Force(versionOverride.overrideVersion); err != nil {
 			return errors.Wrapf(err, "migrate.Force()")
 		}
 	}
