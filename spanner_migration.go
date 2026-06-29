@@ -22,9 +22,15 @@ type SpannerMigrator struct {
 	connectionString      string
 	dataMigrationsTable   string
 	schemaMigrationsTable string
+	versionOverrideConfig VersionOverrideConfig
 	databaseName          string
 	admin                 *spannerDB.DatabaseAdminClient
 	client                *spanner.Client
+}
+
+type VersionOverrideConfig struct {
+	shouldOverride  bool
+	overrideVersion int
 }
 
 var _ Migrator = (*SpannerMigrator)(nil)
@@ -61,6 +67,17 @@ func NewSpannerMigrator(ctx context.Context, projectID, instanceID, dbName strin
 // WithSchemaMigrationsTable allows setting the schema migration table to be used
 func (s *SpannerMigrator) WithSchemaMigrationsTable(table string) *SpannerMigrator {
 	s.schemaMigrationsTable = table
+
+	return s
+}
+
+// WithUnsafeForcedSchemaVersion allows forcing a specific schema version, without verifying that
+// the schema corresponding to the forced version exists in the database
+func (s *SpannerMigrator) WithUnsafeForcedSchemaVersion(version int) *SpannerMigrator {
+	s.versionOverrideConfig = VersionOverrideConfig{
+		shouldOverride:  true,
+		overrideVersion: version,
+	}
 
 	return s
 }
@@ -173,6 +190,12 @@ func (s *SpannerMigrator) migrateUp(migrationsTable, sourceURL string) error {
 
 	if err := m.Up(); err != nil {
 		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", sourceURL)
+	}
+
+	if s.versionOverrideConfig.shouldOverride {
+		if err := m.Force(s.versionOverrideConfig.overrideVersion); err != nil {
+			return errors.Wrapf(err, "migrate.Force()")
+		}
 	}
 
 	return nil
