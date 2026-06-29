@@ -112,7 +112,7 @@ func TestSpannerBackup_Backup(t *testing.T) {
 			}
 			t.Cleanup(func() { _ = b.Close() })
 
-			backup, err := b.Backup(ctx)
+			backup, err := b.backup(ctx)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("SpannerBackup.Backup() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -200,12 +200,12 @@ func TestSpannerBackup_Restore(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = b.Close() })
 
-	backup, err := b.Backup(ctx)
+	backup, err := b.backup(ctx)
 	if err != nil {
 		t.Fatalf("SpannerBackup.Backup(): %s", err)
 	}
 
-	if err := b.Restore(ctx, backup, targetName); err != nil {
+	if err := b.restore(ctx, backup, targetName); err != nil {
 		t.Fatalf("SpannerBackup.Restore() error = %v", err)
 	}
 }
@@ -236,7 +236,7 @@ func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 
-	if _, err := b.Backup(canceledCtx); err == nil {
+	if _, err := b.backup(canceledCtx); err == nil {
 		t.Fatal("SpannerBackup.Backup() with canceled context error = nil, want error")
 	}
 }
