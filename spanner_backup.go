@@ -77,7 +77,7 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, errors.Wrap(ctx.Err(), "Backup()")
 		case <-ticker.C:
 			backup, err := op.Poll(ctx)
 			if err != nil {
@@ -142,7 +142,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return errors.Wrap(ctx.Err(), "Restore()")
 		case <-ticker.C:
 			restore, err := op.Poll(ctx)
 			if err != nil {
@@ -186,7 +186,7 @@ func (s *SpannerBackup) BackupRestore(ctx context.Context, source, destination s
 
 func (s *SpannerBackup) Close() error {
 	if err := s.admin.Close(); err != nil {
-		return err
+		return errors.Wrap(err, "Close()")
 	}
 
 	return nil
