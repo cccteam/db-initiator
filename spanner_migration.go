@@ -22,13 +22,13 @@ type SpannerMigrator struct {
 	connectionString      string
 	dataMigrationsTable   string
 	schemaMigrationsTable string
-	versionOverrideConfig VersionOverrideConfig
+	versionOverrideConfig versionOverrideConfig
 	databaseName          string
 	admin                 *spannerDB.DatabaseAdminClient
 	client                *spanner.Client
 }
 
-type VersionOverrideConfig struct {
+type versionOverrideConfig struct {
 	shouldOverride  bool
 	overrideVersion int
 }
@@ -74,7 +74,7 @@ func (s *SpannerMigrator) WithSchemaMigrationsTable(table string) *SpannerMigrat
 // WithUnsafeForcedSchemaVersion allows forcing a specific schema version, without verifying that
 // the schema corresponding to the forced version exists in the database
 func (s *SpannerMigrator) WithUnsafeForcedSchemaVersion(version int) *SpannerMigrator {
-	s.versionOverrideConfig = VersionOverrideConfig{
+	s.versionOverrideConfig = versionOverrideConfig{
 		shouldOverride:  true,
 		overrideVersion: version,
 	}
@@ -106,7 +106,7 @@ func (s *SpannerMigrator) MigrateUpSchema(ctx context.Context, sourceURL string)
 // Use for DML migrations
 func (s *SpannerMigrator) MigrateUpData(ctx context.Context, sourceURL string) error {
 	ccclogger.FromCtx(ctx).Infof("Applying data migrations from %s", sourceURL)
-	if err := s.migrateUp(s.dataMigrationsTable, sourceURL, VersionOverrideConfig{shouldOverride: false}); err != nil {
+	if err := s.migrateUp(s.dataMigrationsTable, sourceURL, versionOverrideConfig{}); err != nil {
 		return errors.Wrap(err, "SpannerMigrator.migrateUp()")
 	}
 
@@ -182,7 +182,7 @@ func (s *SpannerMigrator) Close() error {
 	return nil
 }
 
-func (s *SpannerMigrator) migrateUp(migrationsTable, sourceURL string, versionOverride VersionOverrideConfig) error {
+func (s *SpannerMigrator) migrateUp(migrationsTable, sourceURL string, versionOverride versionOverrideConfig) error {
 	m, err := s.newMigrate(migrationsTable, sourceURL)
 	if err != nil {
 		return errors.Wrap(err, "SpannerMigrator.newMigrate()")
