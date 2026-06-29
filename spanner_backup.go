@@ -50,9 +50,7 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	})
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			log.Printf("database %s does not exist\n", s.SourceDb)
-
-			return nil, errors.Wrap(err, "s.admin.GetDatabase()")
+			return nil, errors.Wrapf(err, "database %s does not exist", s.SourceDb)
 		}
 
 		return nil, errors.Wrap(err, "s.admin.GetDatabase()")
@@ -85,11 +83,13 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 			backup, err := op.Poll(ctx)
 			if err != nil {
 				log.Println("polling error: ", err)
-				if status.Code(err) == codes.Canceled {
-					return nil, errors.Wrap(err, "Backup()")
+				switch status.Code(err) {
+				case codes.Canceled, codes.NotFound, codes.PermissionDenied,
+					codes.Unauthenticated, codes.InvalidArgument, codes.FailedPrecondition, codes.Unimplemented:
+					return nil, errors.Wrap(err, "Backup() polling error")
+				default:
+					continue
 				}
-
-				continue
 			}
 			meta, err := op.Metadata()
 			if err != nil {
@@ -155,11 +155,13 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 			restore, err := op.Poll(ctx)
 			if err != nil {
 				log.Println("polling error: ", err)
-				if status.Code(err) == codes.Canceled {
-					return errors.Wrap(err, "Restore()")
+				switch status.Code(err) {
+				case codes.Canceled, codes.NotFound, codes.PermissionDenied,
+					codes.Unauthenticated, codes.InvalidArgument, codes.FailedPrecondition, codes.Unimplemented:
+					return errors.Wrap(err, "Restore() polling error")
+				default:
+					continue
 				}
-
-				continue
 			}
 			meta, err := op.Metadata()
 			if err != nil {
