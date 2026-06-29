@@ -85,6 +85,9 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 			backup, err := op.Poll(ctx)
 			if err != nil {
 				log.Println("polling error: ", err)
+				if status.Code(err) == codes.Canceled {
+					return nil, errors.Wrap(err, "Backup()")
+				}
 
 				continue
 			}
