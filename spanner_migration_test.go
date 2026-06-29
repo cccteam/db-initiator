@@ -223,6 +223,94 @@ func TestSpannerMigrator_MigrateUpSchema(t *testing.T) {
 	}
 }
 
+func TestSpannerMigrator_MigrateUpForcedVersionSchema(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	container, err := NewSpannerContainer(ctx, "latest")
+	if err != nil {
+		t.Fatalf("NewSpannerContainer(): %s", err)
+	}
+	t.Cleanup(func() { _ = container.Terminate(ctx) })
+
+	type args struct {
+		sourceURL string
+	}
+	type assertion struct {
+		name  string
+		query string
+	}
+	tests := []struct {
+		name           string
+		args           args
+		wantErr        bool
+		postAssertions []assertion
+	}{
+		{
+			name: "schema migration with forced final database version",
+			args: args{
+				sourceURL: "file://testdata/spanner/migrations_full",
+			},
+			wantErr: false,
+			postAssertions: []assertion{
+				{
+					name:  "Version override is applied",
+					query: "SELECT EXISTS(SELECT 1 FROM SchemaMigrations WHERE Version = 10501)",
+				},
+				{
+					name:  "Version override is applied and is not dirty",
+					query: "SELECT EXISTS(SELECT 1 FROM SchemaMigrations WHERE Version = 10501 AND Dirty = FALSE)",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			dbName := genDBName()
+			db, err := container.CreateDatabase(ctx, dbName)
+			if err != nil {
+				t.Fatalf("SpannerContainer.CreateDatabase() error = %v", err)
+			}
+			defer func() {
+				if err := db.DropDatabase(context.Background()); err != nil {
+					t.Errorf("DB.DropDatabase() err=%s", err)
+				}
+				if err := db.Close(); err != nil {
+					t.Errorf("DB.Close() err=%s", err)
+				}
+			}()
+
+			svc, err := NewSpannerMigrator(ctx, container.projectID, container.instanceID, dbName, container.opts...)
+			svc.WithUnsafeForcedSchemaVersion(10501)
+
+			if err != nil {
+				t.Fatalf("NewSpannerMigrator() error = %v", err)
+			}
+			defer func() {
+				if err := svc.Close(); err != nil {
+					t.Errorf("SpannerMigrator.Close() err=%s", err)
+				}
+			}()
+
+			if err := svc.MigrateUpSchema(ctx, tt.args.sourceURL); (err != nil) != tt.wantErr {
+				t.Errorf("SpannerMigrator.MigrateUpSchema() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			// Run post-migration assertions only if migration succeeded
+			if !tt.wantErr {
+				for _, a := range tt.postAssertions {
+					if result, err := assertionQuery(ctx, db.Client, a.query); err != nil {
+						t.Fatalf("Post-assertion %q failed to execute: %v", a.name, err)
+					} else if !result {
+						t.Errorf("Post-assertion %q returned false", a.name)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestSpannerMigrator_MigrateUpData(t *testing.T) {
 	t.Parallel()
 
