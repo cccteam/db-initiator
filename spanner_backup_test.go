@@ -6,6 +6,7 @@ import (
 )
 
 func TestNewSpannerBackup(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	container, err := NewSpannerContainer(ctx, "latest")
 	if err != nil {
@@ -66,8 +67,9 @@ func TestNewSpannerBackup(t *testing.T) {
 }
 
 func TestSpannerBackup_Backup(t *testing.T) {
-	// t.Skip("the Spanner emulator does not implement the backup API (CreateBackup returns Unimplemented); requires real Cloud Spanner")
-
+	// This only tests the scenario where the source database doesnt exist on the request to backup the db.
+	// The spanner emulator does not support CreateBackup()
+	t.Parallel()
 	ctx := context.Background()
 	container, err := NewSpannerContainer(ctx, "latest")
 	if err != nil {
@@ -127,7 +129,7 @@ func TestSpannerBackup_Backup(t *testing.T) {
 
 func TestSpannerBackup_BackupRestore(t *testing.T) {
 	t.Skip("the Spanner emulator does not implement the backup API (CreateBackup returns Unimplemented); requires real Cloud Spanner")
-
+	t.Parallel()
 	ctx := context.Background()
 	container, err := NewSpannerContainer(ctx, "latest")
 	if err != nil {
@@ -165,7 +167,7 @@ func TestSpannerBackup_BackupRestore(t *testing.T) {
 
 func TestSpannerBackup_Restore(t *testing.T) {
 	t.Skip("the Spanner emulator does not implement the backup API (RestoreBackup and CreateBackup returns Unimplemented); requires real Cloud Spanner")
-
+	t.Parallel()
 	ctx := context.Background()
 	container, err := NewSpannerContainer(ctx, "latest")
 	if err != nil {
@@ -207,6 +209,7 @@ func TestSpannerBackup_Restore(t *testing.T) {
 }
 
 func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	container, err := NewSpannerContainer(ctx, "latest")
 	if err != nil {
