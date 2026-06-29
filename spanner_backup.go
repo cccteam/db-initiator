@@ -57,13 +57,14 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 
 		return nil, errors.Wrap(err, "s.admin.GetDatabase()")
 	}
-	expire := time.Now().AddDate(0, 0, 7).UTC() // Will back up for 1 week
+	ts := time.Now().AddDate(0, 0, 7).UTC()                                             // Will back up for 1 week
+	backupStamp := fmt.Sprintf("%s%03d", ts.Format("20060102_150405"), ts.Nanosecond()) // The display name of the restored database
 	req := &adminpb.CreateBackupRequest{
 		Parent:   instance,
-		BackupId: s.SourceDb + "_backup_" + time.Now().UTC().Format("20060102_150405"),
+		BackupId: s.SourceDb + "_backup_" + backupStamp,
 		Backup: &adminpb.Backup{
 			Database:   database,
-			ExpireTime: timestamppb.New(expire),
+			ExpireTime: timestamppb.New(ts),
 		},
 	}
 	log.Printf("generated backup request for %s\n", s.SourceDb)
