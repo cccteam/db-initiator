@@ -129,50 +129,6 @@ func TestSpannerBackup_Backup(t *testing.T) {
 	}
 }
 
-
-func TestSpannerBackup_Restore(t *testing.T) {
-	t.Skip("the Spanner emulator does not implement the backup API (RestoreBackup and CreateBackup returns Unimplemented); requires real Cloud Spanner")
-	t.Parallel()
-	ctx := context.Background()
-	container, err := NewSpannerContainer(ctx, "latest")
-	if err != nil {
-		t.Fatalf("NewSpannerContainer(): %s", err)
-	}
-	t.Cleanup(func() { _ = container.Terminate(ctx) })
-
-	// Source database to be backed up.
-	sourceDB, err := container.CreateDatabase(ctx, "restore_source")
-	if err != nil {
-		t.Fatalf("container.CreateDatabase(source): %s", err)
-	}
-	t.Cleanup(func() { _ = sourceDB.Close() })
-
-	// Target database must already exist because Restore drops it before restoring.
-	targetDB, err := container.CreateDatabase(ctx, "restore_target")
-	if err != nil {
-		t.Fatalf("container.CreateDatabase(target): %s", err)
-	}
-	t.Cleanup(func() { _ = targetDB.Close() })
-
-	sourceName := container.validDatabaseName("restore_source")
-	targetName := container.validDatabaseName("restore_target")
-
-	b, err := NewSpannerBackup(ctx, container.projectID, container.instanceID, sourceName, targetName, container.opts...)
-	if err != nil {
-		t.Fatalf("NewSpannerBackup(): %s", err)
-	}
-	t.Cleanup(func() { _ = b.Close() })
-
-	backup, err := b.Backup(ctx)
-	if err != nil {
-		t.Fatalf("SpannerBackup.Backup(): %s", err)
-	}
-
-	if err := b.Restore(ctx, backup, targetName); err != nil {
-		t.Fatalf("SpannerBackup.Restore() error = %v", err)
-	}
-}
-
 func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

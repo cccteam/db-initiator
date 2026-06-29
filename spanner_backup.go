@@ -125,6 +125,8 @@ func (s *SpannerBackup) drop(ctx context.Context) error {
 }
 
 func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, targetDatabase string) error {
+	// Spanner emulator does not support RestoreDatabase()
+
 	if err := s.drop(ctx); err != nil {
 		return errors.Wrap(err, "s.drop()")
 	}
