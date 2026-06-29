@@ -112,7 +112,7 @@ func TestSpannerBackup_Backup(t *testing.T) {
 			}
 			t.Cleanup(func() { _ = b.Close() })
 
-			backup, err := b.backup(ctx)
+			backup, err := b.Backup(ctx)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("SpannerBackup.Backup() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -129,43 +129,6 @@ func TestSpannerBackup_Backup(t *testing.T) {
 	}
 }
 
-func TestSpannerBackup_BackupRestore(t *testing.T) {
-	t.Skip("the Spanner emulator does not implement the backup API (CreateBackup returns Unimplemented); requires real Cloud Spanner")
-	t.Parallel()
-	ctx := context.Background()
-	container, err := NewSpannerContainer(ctx, "latest")
-	if err != nil {
-		t.Fatalf("NewSpannerContainer(): %s", err)
-	}
-	t.Cleanup(func() { _ = container.Terminate(ctx) })
-
-	// Source database to be backed up.
-	sourceDB, err := container.CreateDatabase(ctx, "br_source")
-	if err != nil {
-		t.Fatalf("container.CreateDatabase(source): %s", err)
-	}
-	t.Cleanup(func() { _ = sourceDB.Close() })
-
-	// Target database must already exist because Restore drops it before restoring.
-	targetDB, err := container.CreateDatabase(ctx, "br_target")
-	if err != nil {
-		t.Fatalf("container.CreateDatabase(target): %s", err)
-	}
-	t.Cleanup(func() { _ = targetDB.Close() })
-
-	sourceName := container.validDatabaseName("br_source")
-	targetName := container.validDatabaseName("br_target")
-
-	b, err := NewSpannerBackup(ctx, container.projectID, container.instanceID, sourceName, targetName, container.opts...)
-	if err != nil {
-		t.Fatalf("NewSpannerBackup(): %s", err)
-	}
-	t.Cleanup(func() { _ = b.Close() })
-
-	if err := b.BackupRestore(ctx, targetName); err != nil {
-		t.Fatalf("SpannerBackup.BackupRestore() error = %v", err)
-	}
-}
 
 func TestSpannerBackup_Restore(t *testing.T) {
 	t.Skip("the Spanner emulator does not implement the backup API (RestoreBackup and CreateBackup returns Unimplemented); requires real Cloud Spanner")
@@ -200,12 +163,12 @@ func TestSpannerBackup_Restore(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = b.Close() })
 
-	backup, err := b.backup(ctx)
+	backup, err := b.Backup(ctx)
 	if err != nil {
 		t.Fatalf("SpannerBackup.Backup(): %s", err)
 	}
 
-	if err := b.restore(ctx, backup, targetName); err != nil {
+	if err := b.Restore(ctx, backup, targetName); err != nil {
 		t.Fatalf("SpannerBackup.Restore() error = %v", err)
 	}
 }
@@ -236,7 +199,7 @@ func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 	canceledCtx, cancel := context.WithCancel(ctx)
 	cancel()
 
-	if _, err := b.backup(canceledCtx); err == nil {
+	if _, err := b.Backup(canceledCtx); err == nil {
 		t.Fatal("SpannerBackup.Backup() with canceled context error = nil, want error")
 	}
 }

@@ -39,7 +39,7 @@ func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targ
 	}, nil
 }
 
-func (s *SpannerBackup) backup(ctx context.Context) (*adminpb.Backup, error) {
+func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	log.Printf("preparing to back up '%s' database\n", s.SourceDb)
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
 	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
@@ -124,7 +124,7 @@ func (s *SpannerBackup) drop(ctx context.Context) error {
 	return nil
 }
 
-func (s *SpannerBackup) restore(ctx context.Context, backup *adminpb.Backup, targetDatabase string) error {
+func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, targetDatabase string) error {
 	if err := s.drop(ctx); err != nil {
 		return errors.Wrap(err, "s.drop()")
 	}
@@ -176,21 +176,6 @@ func (s *SpannerBackup) restore(ctx context.Context, backup *adminpb.Backup, tar
 			}
 		}
 	}
-}
-
-func (s *SpannerBackup) BackupRestore(ctx context.Context, destination string) error {
-	backup, err := s.backup(ctx)
-	if err != nil {
-		log.Println("error backing up ", err)
-
-		return err
-	}
-
-	if err := s.restore(ctx, backup, destination); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (s *SpannerBackup) Close() error {
