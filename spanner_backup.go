@@ -153,6 +153,9 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 			restore, err := op.Poll(ctx)
 			if err != nil {
 				log.Println("polling error: ", err)
+				if status.Code(err) == codes.Canceled {
+					return errors.Wrap(err, "Restore()")
+				}
 
 				continue
 			}
