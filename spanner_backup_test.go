@@ -162,7 +162,7 @@ func TestSpannerBackup_BackupRestore(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = b.Close() })
 
-	if err := b.BackupRestore(ctx, sourceName, targetName); err != nil {
+	if err := b.BackupRestore(ctx, targetName); err != nil {
 		t.Fatalf("SpannerBackup.BackupRestore() error = %v", err)
 	}
 }

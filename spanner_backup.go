@@ -54,6 +54,8 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 
 			return nil, errors.Wrap(err, "s.admin.GetDatabase()")
 		}
+
+		return nil, errors.Wrap(err, "s.admin.GetDatabase()")
 	}
 	expire := time.Now().AddDate(0, 0, 7).UTC() // Will back up for 1 week
 	req := &adminpb.CreateBackupRequest{
@@ -104,8 +106,8 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	}
 }
 
-func (s *SpannerBackup) drop(ctx context.Context, targetDatabase string) error {
-	log.Printf("dropping database %s\n", targetDatabase)
+func (s *SpannerBackup) drop(ctx context.Context) error {
+	log.Printf("dropping database %s\n", s.TargetConnectionString)
 	req := &adminpb.DropDatabaseRequest{
 		Database: s.TargetConnectionString,
 	}
@@ -113,14 +115,14 @@ func (s *SpannerBackup) drop(ctx context.Context, targetDatabase string) error {
 	if err != nil {
 		return errors.Wrap(err, "s.admin.DropDatabase()")
 	}
-	log.Printf("database %s dropped\n", targetDatabase)
+	log.Printf("database %s dropped\n", s.TargetConnectionString)
 
 	return nil
 }
 
 func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, targetDatabase string) error {
-	if err := s.drop(ctx, targetDatabase); err != nil {
-		return errors.Wrap(err, "s.Drop()")
+	if err := s.drop(ctx); err != nil {
+		return errors.Wrap(err, "s.drop()")
 	}
 	req := &adminpb.RestoreDatabaseRequest{
 		Parent:     fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID), // Spanner Instance
@@ -169,7 +171,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 	}
 }
 
-func (s *SpannerBackup) BackupRestore(ctx context.Context, source, destination string) error {
+func (s *SpannerBackup) BackupRestore(ctx context.Context, destination string) error {
 	backup, err := s.Backup(ctx)
 	if err != nil {
 		log.Println("error backing up ", err)
