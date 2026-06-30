@@ -93,7 +93,7 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 			}
 			meta, err := op.Metadata()
 			if err != nil {
-				log.Println("could not get metadata")
+				log.Println(errors.Wrap(err, "op.Metadata()"))
 
 				continue
 			}
@@ -165,7 +165,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 			}
 			meta, err := op.Metadata()
 			if err != nil {
-				log.Println("could not get metadata")
+				log.Println(errors.Wrap(err, "op.Metadata()"))
 
 				continue
 			}
