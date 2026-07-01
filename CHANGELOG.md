@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.11](https://github.com/cccteam/db-initiator/compare/v0.3.10...v0.3.11) (2026-07-01)
+
+
+### Features
+
+* **spanner:** add backup and restore functionality ([#162](https://github.com/cccteam/db-initiator/issues/162)) ([88cdb02](https://github.com/cccteam/db-initiator/commit/88cdb0226854583d37b1b064dbb742edd55485cb))
+
 ## [0.3.10](https://github.com/cccteam/db-initiator/compare/v0.3.9...v0.3.10) (2026-06-05)
 
 
