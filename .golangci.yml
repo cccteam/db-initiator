@@ -83,6 +83,7 @@ linters:
             - github.com/testcontainers/testcontainers-go
             - google.golang.org/api
             - google.golang.org/grpc
+            - google.golang.org/protobuf/types/known/timestamppb
     dupl:
       threshold: 100
     exhaustive:
