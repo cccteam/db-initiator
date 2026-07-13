@@ -60,10 +60,28 @@ func (s *SpannerBackup) checkExistingDatabase(ctx context.Context, instanceId, d
 	return true, nil
 }
 
+func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (string, error) {
+	req := adminpb.ListBackupsRequest{
+		Parent: s.InstanceID,
+		Filter: fmt.Sprintf("name=%s, state=READY", s.SourceDb),
+	}
+
+	s.admin.ListBackups(ctx, &req)
+
+	return "", nil
+}
+
 func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	log.Printf("preparing to back up '%s' database\n", s.SourceDb)
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
 	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
+
+	_, err := s.getMostRecentBackup(ctx)
+	if err != nil {
+		log.Println("error retrieving most recent backups: ", err)
+	}
+
+	return nil, nil
 
 	exists, err := s.checkExistingDatabase(ctx, s.InstanceID, s.SourceDb)
 	if err != nil {
