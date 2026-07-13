@@ -39,21 +39,41 @@ func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targ
 	}, nil
 }
 
-func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
-	log.Printf("preparing to back up '%s' database\n", s.SourceDb)
-	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
-	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
+func (s *SpannerBackup) checkExistingDatabase(ctx context.Context, instanceId, databaseName string) (bool, error) {
 	// Check if db exists
+
+	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, databaseName)
 	log.Printf("checking that database %s exists\n", s.SourceDb)
 	_, err := s.admin.GetDatabase(ctx, &adminpb.GetDatabaseRequest{
 		Name: database,
 	})
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return nil, errors.Wrapf(err, "database %s does not exist", s.SourceDb)
+			return false, nil
 		}
 
-		return nil, errors.Wrap(err, "s.admin.GetDatabase()")
+		return false, errors.Wrap(err, "s.admin.GetDatabase()")
+	}
+
+	log.Printf("existing database found: %s\n", databaseName)
+
+	return true, nil
+}
+
+func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
+	log.Printf("preparing to back up '%s' database\n", s.SourceDb)
+	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
+	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
+
+	exists, err := s.checkExistingDatabase(ctx, s.InstanceID, s.SourceDb)
+	if err != nil {
+		return nil, errors.Wrap(err, "Backup()")
+	}
+
+	if !exists {
+		log.Println("source database does not exist")
+
+		return nil, errors.Wrap(err, "Backup()")
 	}
 	ts := time.Now().AddDate(0, 0, 7).UTC()                                                     // Will back up for 1 week
 	backupStamp := fmt.Sprintf("%s%03d", ts.Format("20060102_150405"), ts.Nanosecond()/1000000) // The display name of the restored database
@@ -110,25 +130,21 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	}
 }
 
-func (s *SpannerBackup) drop(ctx context.Context) error {
-	log.Printf("dropping database %s\n", s.TargetConnectionString)
-	req := &adminpb.DropDatabaseRequest{
-		Database: s.TargetConnectionString,
-	}
-	err := s.admin.DropDatabase(ctx, req)
-	if err != nil {
-		return errors.Wrap(err, "s.admin.DropDatabase()")
-	}
-	log.Printf("database %s dropped\n", s.TargetConnectionString)
-
-	return nil
-}
-
 func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, targetDatabase string) error {
 	// Spanner emulator does not support RestoreDatabase()
+	log.Println("checking for existing target database: ", targetDatabase)
 
-	if err := s.drop(ctx); err != nil {
-		return errors.Wrap(err, "s.drop()")
+	exists, err := s.checkExistingDatabase(ctx, s.InstanceID, targetDatabase)
+	if err != nil {
+		log.Println("error checking for target database")
+
+		return errors.Wrap(err, "Restore()")
+	}
+
+	if exists {
+		log.Println("target database exists.  target database must be dropped first.")
+
+		return errors.New("cannot restore database to existing target")
 	}
 	req := &adminpb.RestoreDatabaseRequest{
 		Parent:     fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID), // Spanner Instance
