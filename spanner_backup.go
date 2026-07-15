@@ -155,8 +155,6 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 
 func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, targetDatabase string) error {
 	// Spanner emulator does not support RestoreDatabase()
-	log.Println("checking for existing target database: ", targetDatabase)
-
 	err := s.checkExistingDatabase(ctx, targetDatabase)
 	if err == nil {
 		return errors.Newf("target database %s exists and must be dropped", targetDatabase)
