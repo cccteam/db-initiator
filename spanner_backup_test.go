@@ -2,6 +2,7 @@ package dbinitiator
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -22,7 +23,6 @@ func TestNewSpannerBackup(t *testing.T) {
 		ProjectID:    container.projectID,
 		InstanceID:   container.instanceID,
 		SourceDb:     "source_db",
-		TargetDb:     "target_db",
 		MaxBackupAge: 600,
 	}
 
@@ -57,10 +57,6 @@ func TestNewSpannerBackup(t *testing.T) {
 				}
 			})
 
-			wantTarget := "projects/" + cfg.ProjectID + "/instances/" + cfg.InstanceID + "/databases/" + cfg.TargetDb
-			if b.TargetDb != wantTarget {
-				t.Errorf("TargetDb = %q, want %q", b.TargetDb, wantTarget)
-			}
 			if b.ProjectID != cfg.ProjectID {
 				t.Errorf("ProjectID = %q, want %q", b.ProjectID, cfg.ProjectID)
 			}
@@ -94,7 +90,6 @@ func TestSpannerBackup_Backup(t *testing.T) {
 
 	cfg := SpannerBackup{
 		SourceDb: "does_not_exist",
-		TargetDb: "unused_target",
 	}
 	tests := []struct {
 		name    string
@@ -153,7 +148,6 @@ func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 		ProjectID:  container.projectID,
 		InstanceID: container.instanceID,
 		SourceDb:   sourceName,
-		TargetDb:   "unused_target",
 	}
 
 	b, err := NewSpannerBackup(ctx, &cfg, container.opts...)
@@ -167,6 +161,47 @@ func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 
 	if _, err := b.Backup(canceledCtx); err == nil {
 		t.Fatal("SpannerBackup.Backup() with canceled context error = nil, want error")
+	}
+}
+
+func TestSpannerBackup_RestoreTargetExists(t *testing.T) {
+	// The spanner emulator does not support RestoreDatabase(). This exercises the
+	// pre-flight check that rejects a restore when the target database already exists,
+	// which returns before RestoreDatabase() is ever called.
+	t.Parallel()
+	ctx := context.Background()
+	container, err := NewSpannerContainer(ctx, "latest")
+	if err != nil {
+		t.Fatalf("NewSpannerContainer(): %s", err)
+	}
+	t.Cleanup(func() { _ = container.Terminate(ctx) })
+
+	// Create the target database so it already exists at restore time.
+	targetDB, err := container.CreateDatabase(ctx, "restore_target")
+	if err != nil {
+		t.Fatalf("container.CreateDatabase(): %s", err)
+	}
+	t.Cleanup(func() { _ = targetDB.Close() })
+
+	targetName := container.validDatabaseName("restore_target")
+
+	cfg := SpannerBackup{
+		ProjectID:  container.projectID,
+		InstanceID: container.instanceID,
+	}
+
+	b, err := NewSpannerBackup(ctx, &cfg, container.opts...)
+	if err != nil {
+		t.Fatalf("NewSpannerBackup(): %s", err)
+	}
+	t.Cleanup(func() { _ = b.Close() })
+
+	backup := &adminpb.Backup{
+		Name: fmt.Sprintf("projects/%s/instances/%s/backups/some_backup", container.projectID, container.instanceID),
+	}
+
+	if err := b.Restore(ctx, backup, targetName); err == nil {
+		t.Fatal("SpannerBackup.Restore() with existing target error = nil, want error")
 	}
 }
 

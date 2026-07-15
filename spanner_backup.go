@@ -19,7 +19,6 @@ import (
 var errNoBackups = errors.New("no backups found")
 
 type SpannerBackup struct {
-	TargetDb     string
 	SourceDb     string
 	ProjectID    string
 	InstanceID   string
@@ -28,14 +27,12 @@ type SpannerBackup struct {
 }
 
 func NewSpannerBackup(ctx context.Context, cfg *SpannerBackup, opts ...option.ClientOption) (*SpannerBackup, error) {
-	tgtDbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", cfg.ProjectID, cfg.InstanceID, cfg.TargetDb)
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "spannerDB.NewDatabaseAdminClient()")
 	}
 
 	return &SpannerBackup{
-		TargetDb:     tgtDbStr,
 		SourceDb:     cfg.SourceDb,
 		admin:        adminClient,
 		ProjectID:    cfg.ProjectID,
@@ -83,7 +80,11 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	log.Printf("preparing to back up '%s' database\n", s.SourceDb)
 
 	if err := s.checkExistingDatabase(ctx, s.SourceDb); err != nil {
-		return nil, errors.Wrap(err, "checkExistingDatabase()")
+		if status.Code(err) == codes.NotFound {
+			log.Printf("database %s does not exist", s.SourceDb)
+		}
+
+		return nil, errors.Wrap(err, "Backup()")
 	}
 
 	backup, ok, err := s.getMostRecentBackup(ctx)
