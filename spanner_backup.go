@@ -48,6 +48,7 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 	log.Println("getting most recent backups")
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
 	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
+	// Filter databases on exact match and only backups that are "READY" - meaning they are ready to be restored elsewhere
 	filter := fmt.Sprintf("database=%q AND state:READY", db)
 	req := &adminpb.ListBackupsRequest{
 		Parent: instance,
@@ -66,9 +67,9 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 		return nil, false, errors.Wrap(err, "getMostRecentBackup()")
 	}
 
-	ok := s.validateDatabaseBackupAge(backup)
-	if !ok {
-		log.Printf("recent backup does not satisfy age requirement: %d seconds. taking fresh backup\n", s.MaxBackupAge)
+	eligible := s.validateDatabaseBackupAge(backup)
+	if !eligible {
+		log.Printf("recent backup age does not satisfy age requirement: %d seconds. taking fresh backup\n", s.MaxBackupAge)
 
 		return backup, false, nil
 	}
@@ -86,17 +87,14 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	}
 
 	backup, ok, err := s.getMostRecentBackup(ctx)
-	if err == nil {
-		if ok {
-			return backup, nil
-		}
-	}
-	if err != nil {
-		if errors.Is(err, errNoBackups) {
-			log.Printf("no backups found for database: %s. proceeding to take fresh backup.", s.SourceDb)
-		} else {
-			return nil, errors.Wrap(err, "Backup()")
-		}
+
+	switch {
+	case err == nil && ok:
+		return backup, nil
+	case errors.Is(err, errNoBackups):
+		log.Printf("no backups found for database: %s. proceeding to take fresh backup.", s.SourceDb)
+	case err != nil:
+		return nil, errors.Wrap(err, "Backup()")
 	}
 
 	ts := time.Now().AddDate(0, 0, 7).UTC()                                                     // Will back up for 1 week
@@ -160,7 +158,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 
 	err := s.checkExistingDatabase(ctx, targetDatabase)
 	if err == nil {
-		return errors.Newf("target database %s exists and must be dropped\n", targetDatabase)
+		return errors.Newf("target database %s exists and must be dropped", targetDatabase)
 	}
 	if status.Code(err) != codes.NotFound {
 		return errors.Wrap(err, "checkExistingDatabase()")
