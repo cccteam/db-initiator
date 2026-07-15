@@ -44,7 +44,7 @@ func TestNewSpannerBackup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			b, err := NewSpannerBackup(tt.args.ctx, cfg, container.opts...)
+			b, err := NewSpannerBackup(tt.args.ctx, &cfg, container.opts...)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("NewSpannerBackup() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -109,7 +109,7 @@ func TestSpannerBackup_Backup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			b, err := NewSpannerBackup(ctx, cfg, container.opts...)
+			b, err := NewSpannerBackup(ctx, &cfg, container.opts...)
 			if err != nil {
 				t.Fatalf("NewSpannerBackup(): %s", err)
 			}
@@ -156,7 +156,7 @@ func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 		TargetDb:   "unused_target",
 	}
 
-	b, err := NewSpannerBackup(ctx, cfg, container.opts...)
+	b, err := NewSpannerBackup(ctx, &cfg, container.opts...)
 	if err != nil {
 		t.Fatalf("NewSpannerBackup(): %s", err)
 	}
