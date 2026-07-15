@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	spannerDB "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -22,7 +23,6 @@ type SpannerBackup struct {
 	ProjectID              string
 	InstanceID             string
 	admin                  *spannerDB.DatabaseAdminClient
-	CreateBackupIfNoFound  bool
 	MaxBackupAge           int64
 }
 
@@ -43,28 +43,7 @@ func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targ
 	}, nil
 }
 
-func (s *SpannerBackup) checkExistingDatabase(ctx context.Context, instanceId, databaseName string) (bool, error) {
-	// Check if db exists
-
-	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, databaseName)
-	log.Printf("checking that database %s exists\n", s.SourceDb)
-	_, err := s.admin.GetDatabase(ctx, &adminpb.GetDatabaseRequest{
-		Name: database,
-	})
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			return false, nil
-		}
-
-		return false, errors.Wrap(err, "s.admin.GetDatabase()")
-	}
-
-	log.Printf("existing database found: %s\n", databaseName)
-
-	return true, nil
-}
-
-func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backup, error) {
+func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backup, bool, error) {
 	log.Println("getting most recent backups")
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
 	filter := fmt.Sprintf("database:%q", s.SourceDb)
@@ -73,44 +52,47 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 		Filter: filter,
 	}
 
+	// GCP Docs state the items returned are sorted by createTime in descending order, therefore the first non-nil will be the most recent.
+	// https://pkg.go.dev/cloud.google.com/go/spanner/admin/database/apiv1#DatabaseAdminClient.ListBackups
+
 	backupIt := s.admin.ListBackups(ctx, req)
 	backup, err := backupIt.Next()
 	if err == iterator.Done {
-		return nil, errors.Newf("no backups found for database: %s", s.SourceDb)
+		return nil, false, errors.Newf("no backups found")
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "getMostRecentBackup()")
+		return nil, false, errors.Wrap(err, "getMostRecentBackup()")
 	}
 
-	return backup, nil
+	ok := s.validateDatabaseBackupAge(backup)
+	if !ok {
+		return backup, false, nil
+	}
+
+	return backup, true, nil
 }
 
 func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
-	now := time.Now().Unix()
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
 	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
 	log.Printf("preparing to back up '%s' database\n", s.SourceDb)
 
-	exists, err := s.checkExistingDatabase(ctx, s.InstanceID, s.SourceDb)
+	if err := s.checkExistingDatabase(ctx, s.SourceDb); err != nil {
+		return nil, err
+	}
+
+	backup, ok, err := s.getMostRecentBackup(ctx)
+	if err == nil {
+		if ok {
+			return backup, nil
+		}
+	}
 	if err != nil {
-		return nil, errors.Wrap(err, "Backup()")
-	}
-
-	if !exists {
-		log.Println("source database does not exist")
-
-		return nil, errors.Wrap(err, "Backup()")
-	}
-
-	backup, err := s.getMostRecentBackup(ctx)
-	if err != nil {
-		log.Println("error getting recent backup ", err)
-	}
-
-	if (now - backup.CreateTime.GetSeconds()) < s.MaxBackupAge {
-		log.Println("most recent backup is less than 24 hours old")
-
-		return backup, nil
+		if strings.Contains(err.Error(), "no backups found") {
+			log.Printf("no backups found for database: %s. proceeding to take fresh backup.", s.SourceDb)
+		} else {
+			return nil, errors.Wrap(err, "Backup()")
+		}
 	}
 
 	ts := time.Now().AddDate(0, 0, 7).UTC()                                                     // Will back up for 1 week
@@ -172,18 +154,10 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 	// Spanner emulator does not support RestoreDatabase()
 	log.Println("checking for existing target database: ", targetDatabase)
 
-	exists, err := s.checkExistingDatabase(ctx, s.InstanceID, targetDatabase)
-	if err != nil {
-		log.Println("error checking for target database")
-
-		return errors.Wrap(err, "Restore()")
+	if err := s.checkExistingDatabase(ctx, targetDatabase); err == nil {
+		return errors.Wrap(err, "target database exists and must be dropped")
 	}
 
-	if exists {
-		log.Println("target database exists.  target database must be dropped first.")
-
-		return errors.New("cannot restore database to existing target")
-	}
 	req := &adminpb.RestoreDatabaseRequest{
 		Parent:     fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID), // Spanner Instance
 		DatabaseId: targetDatabase,                                                     // Target Database to restore TO
@@ -234,6 +208,38 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 			}
 		}
 	}
+}
+
+func (s *SpannerBackup) validateDatabaseBackupAge(b *adminpb.Backup) bool {
+	now := time.Now().Unix()
+	if (now - b.CreateTime.GetSeconds()) < s.MaxBackupAge {
+		log.Println("most recent backup is less than 24 hours old")
+
+		return true
+	}
+
+	return false
+}
+
+func (s *SpannerBackup) checkExistingDatabase(ctx context.Context, databaseName string) error {
+	// Check if db exists
+
+	database := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, databaseName)
+	log.Printf("checking for existing database: %s\n", databaseName)
+	_, err := s.admin.GetDatabase(ctx, &adminpb.GetDatabaseRequest{
+		Name: database,
+	})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return err
+		}
+
+		return errors.Wrap(err, "s.admin.GetDatabase()")
+	}
+
+	log.Printf("existing database found: %s\n", databaseName)
+
+	return nil
 }
 
 func (s *SpannerBackup) Close() error {
