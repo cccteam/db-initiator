@@ -18,28 +18,28 @@ import (
 )
 
 type SpannerBackup struct {
-	TargetConnectionString string
-	SourceDb               string
-	ProjectID              string
-	InstanceID             string
-	admin                  *spannerDB.DatabaseAdminClient
-	MaxBackupAge           int64
+	TargetDb     string
+	SourceDb     string
+	ProjectID    string
+	InstanceID   string
+	admin        *spannerDB.DatabaseAdminClient
+	MaxBackupAge int64
 }
 
-func NewSpannerBackup(ctx context.Context, projectID, instanceID, sourceDb, targetDb string, opts ...option.ClientOption) (*SpannerBackup, error) {
-	tgtDbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, targetDb)
+func NewSpannerBackup(ctx context.Context, cfg SpannerBackup, opts ...option.ClientOption) (*SpannerBackup, error) {
+	tgtDbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", cfg.ProjectID, cfg.InstanceID, cfg.TargetDb)
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "spannerDB.NewDatabaseAdminClient()")
 	}
 
 	return &SpannerBackup{
-		TargetConnectionString: tgtDbStr,
-		SourceDb:               sourceDb,
-		admin:                  adminClient,
-		ProjectID:              projectID,
-		InstanceID:             instanceID,
-		MaxBackupAge:           86400, // 24 hours
+		TargetDb:     tgtDbStr,
+		SourceDb:     cfg.SourceDb,
+		admin:        adminClient,
+		ProjectID:    cfg.ProjectID,
+		InstanceID:   cfg.InstanceID,
+		MaxBackupAge: cfg.MaxBackupAge,
 	}, nil
 }
 
@@ -94,6 +94,8 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 			return nil, errors.Wrap(err, "Backup()")
 		}
 	}
+
+	log.Printf("recent backup does not satisfy age requirement: %d seconds. taking fresh backup\n", s.MaxBackupAge)
 
 	ts := time.Now().AddDate(0, 0, 7).UTC()                                                     // Will back up for 1 week
 	backupStamp := fmt.Sprintf("%s%03d", ts.Format("20060102_150405"), ts.Nanosecond()/1000000) // The display name of the restored database
@@ -155,7 +157,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 	log.Println("checking for existing target database: ", targetDatabase)
 
 	if err := s.checkExistingDatabase(ctx, targetDatabase); err == nil {
-		return errors.Wrap(err, "target database exists and must be dropped")
+		return errors.Newf("target database %s exists and must be dropped\n", targetDatabase)
 	}
 
 	req := &adminpb.RestoreDatabaseRequest{
