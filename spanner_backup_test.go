@@ -3,6 +3,10 @@ package dbinitiator
 import (
 	"context"
 	"testing"
+	"time"
+
+	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestNewSpannerBackup(t *testing.T) {
@@ -55,7 +59,7 @@ func TestNewSpannerBackup(t *testing.T) {
 
 			wantTarget := "projects/" + cfg.ProjectID + "/instances/" + cfg.InstanceID + "/databases/" + cfg.TargetDb
 			if b.TargetDb != wantTarget {
-				t.Errorf("TargetConnectionString = %q, want %q", b.TargetDb, wantTarget)
+				t.Errorf("TargetDb = %q, want %q", b.TargetDb, wantTarget)
 			}
 			if b.ProjectID != cfg.ProjectID {
 				t.Errorf("ProjectID = %q, want %q", b.ProjectID, cfg.ProjectID)
@@ -163,5 +167,48 @@ func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 
 	if _, err := b.Backup(canceledCtx); err == nil {
 		t.Fatal("SpannerBackup.Backup() with canceled context error = nil, want error")
+	}
+}
+
+func TestSpannerBackup_validateDatabaseBackupAge(t *testing.T) {
+	t.Parallel()
+
+	const maxBackupAge int64 = 600
+
+	tests := []struct {
+		name string
+		// age is how long ago the backup was created.
+		age  time.Duration
+		want bool
+	}{
+		{
+			name: "just under max age is eligible for reuse",
+			age:  time.Duration(maxBackupAge-2) * time.Second,
+			want: true,
+		},
+		{
+			name: "at max age is not eligible",
+			age:  time.Duration(maxBackupAge) * time.Second,
+			want: false,
+		},
+		{
+			name: "just over max age is not eligible",
+			age:  time.Duration(maxBackupAge+2) * time.Second,
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			s := &SpannerBackup{MaxBackupAge: maxBackupAge}
+			backup := &adminpb.Backup{
+				CreateTime: timestamppb.New(time.Now().Add(-tt.age)),
+			}
+
+			if got := s.validateDatabaseBackupAge(backup); got != tt.want {
+				t.Errorf("validateDatabaseBackupAge() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
