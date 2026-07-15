@@ -27,7 +27,7 @@ type SpannerBackup struct {
 	MaxBackupAge int64
 }
 
-func NewSpannerBackup(ctx context.Context, cfg SpannerBackup, opts ...option.ClientOption) (*SpannerBackup, error) {
+func NewSpannerBackup(ctx context.Context, cfg *SpannerBackup, opts ...option.ClientOption) (*SpannerBackup, error) {
 	tgtDbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", cfg.ProjectID, cfg.InstanceID, cfg.TargetDb)
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 
 	backupIt := s.admin.ListBackups(ctx, req)
 	backup, err := backupIt.Next()
-	if err == iterator.Done {
+	if errors.Is(err, iterator.Done) {
 		return nil, false, errNoBackups
 	}
 	if err != nil {
@@ -239,7 +239,7 @@ func (s *SpannerBackup) checkExistingDatabase(ctx context.Context, databaseName 
 	})
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return err
+			return errors.Wrap(err, "checkExistingDatabase()")
 		}
 
 		return errors.Wrap(err, "s.admin.GetDatabase()")
