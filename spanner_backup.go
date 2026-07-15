@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	spannerDB "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -16,6 +15,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var errNoBackups = errors.New("no backups found")
 
 type SpannerBackup struct {
 	TargetDb     string
@@ -46,7 +47,8 @@ func NewSpannerBackup(ctx context.Context, cfg SpannerBackup, opts ...option.Cli
 func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backup, bool, error) {
 	log.Println("getting most recent backups")
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
-	filter := fmt.Sprintf("database:%q", s.SourceDb)
+	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
+	filter := fmt.Sprintf("database=%q AND state:READY", db)
 	req := &adminpb.ListBackupsRequest{
 		Parent: instance,
 		Filter: filter,
@@ -58,7 +60,7 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 	backupIt := s.admin.ListBackups(ctx, req)
 	backup, err := backupIt.Next()
 	if err == iterator.Done {
-		return nil, false, errors.Newf("no backups found")
+		return nil, false, errNoBackups
 	}
 	if err != nil {
 		return nil, false, errors.Wrap(err, "getMostRecentBackup()")
@@ -66,6 +68,8 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 
 	ok := s.validateDatabaseBackupAge(backup)
 	if !ok {
+		log.Printf("recent backup does not satisfy age requirement: %d seconds. taking fresh backup\n", s.MaxBackupAge)
+
 		return backup, false, nil
 	}
 
@@ -78,7 +82,7 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 	log.Printf("preparing to back up '%s' database\n", s.SourceDb)
 
 	if err := s.checkExistingDatabase(ctx, s.SourceDb); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "checkExistingDatabase()")
 	}
 
 	backup, ok, err := s.getMostRecentBackup(ctx)
@@ -88,14 +92,12 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 		}
 	}
 	if err != nil {
-		if strings.Contains(err.Error(), "no backups found") {
+		if errors.Is(err, errNoBackups) {
 			log.Printf("no backups found for database: %s. proceeding to take fresh backup.", s.SourceDb)
 		} else {
 			return nil, errors.Wrap(err, "Backup()")
 		}
 	}
-
-	log.Printf("recent backup does not satisfy age requirement: %d seconds. taking fresh backup\n", s.MaxBackupAge)
 
 	ts := time.Now().AddDate(0, 0, 7).UTC()                                                     // Will back up for 1 week
 	backupStamp := fmt.Sprintf("%s%03d", ts.Format("20060102_150405"), ts.Nanosecond()/1000000) // The display name of the restored database
@@ -156,8 +158,12 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 	// Spanner emulator does not support RestoreDatabase()
 	log.Println("checking for existing target database: ", targetDatabase)
 
-	if err := s.checkExistingDatabase(ctx, targetDatabase); err == nil {
+	err := s.checkExistingDatabase(ctx, targetDatabase)
+	if err == nil {
 		return errors.Newf("target database %s exists and must be dropped\n", targetDatabase)
+	}
+	if status.Code(err) != codes.NotFound {
+		return errors.Wrap(err, "checkExistingDatabase()")
 	}
 
 	req := &adminpb.RestoreDatabaseRequest{
@@ -168,7 +174,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 		},
 	}
 
-	log.Printf("restoring %v\n", &req.Source)
+	log.Printf("restoring %s\n", backup.Name)
 	op, err := s.admin.RestoreDatabase(ctx, req)
 	if err != nil {
 		return errors.Wrap(err, "s.admin.RestoreDatabase()")
@@ -215,7 +221,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 func (s *SpannerBackup) validateDatabaseBackupAge(b *adminpb.Backup) bool {
 	now := time.Now().Unix()
 	if (now - b.CreateTime.GetSeconds()) < s.MaxBackupAge {
-		log.Println("most recent backup is less than 24 hours old")
+		log.Printf("most recent backup is newer than desired age: %d\n", s.MaxBackupAge)
 
 		return true
 	}
