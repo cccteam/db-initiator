@@ -168,7 +168,7 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 		},
 	}
 
-	log.Printf("restoring %s\n", req.Source)
+	log.Printf("restoring %v\n", &req.Source)
 	op, err := s.admin.RestoreDatabase(ctx, req)
 	if err != nil {
 		return errors.Wrap(err, "s.admin.RestoreDatabase()")

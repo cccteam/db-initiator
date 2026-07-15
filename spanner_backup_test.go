@@ -14,12 +14,16 @@ func TestNewSpannerBackup(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = container.Terminate(ctx) })
 
+	cfg := SpannerBackup{
+		ProjectID:    container.projectID,
+		InstanceID:   container.instanceID,
+		SourceDb:     "source_db",
+		TargetDb:     "target_db",
+		MaxBackupAge: 600,
+	}
+
 	type args struct {
-		ctx        context.Context
-		projectID  string
-		instanceID string
-		sourceDb   string
-		targetDb   string
+		ctx context.Context
 	}
 	tests := []struct {
 		name    string
@@ -29,18 +33,14 @@ func TestNewSpannerBackup(t *testing.T) {
 		{
 			name: "valid backup client",
 			args: args{
-				ctx:        context.Background(),
-				projectID:  container.projectID,
-				instanceID: container.instanceID,
-				sourceDb:   "source_db",
-				targetDb:   "target_db",
+				ctx: context.Background(),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			b, err := NewSpannerBackup(tt.args.ctx, tt.args.projectID, tt.args.instanceID, tt.args.sourceDb, tt.args.targetDb, container.opts...)
+			b, err := NewSpannerBackup(tt.args.ctx, cfg, container.opts...)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("NewSpannerBackup() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -53,15 +53,15 @@ func TestNewSpannerBackup(t *testing.T) {
 				}
 			})
 
-			wantTarget := "projects/" + tt.args.projectID + "/instances/" + tt.args.instanceID + "/databases/" + tt.args.targetDb
-			if b.TargetConnectionString != wantTarget {
-				t.Errorf("TargetConnectionString = %q, want %q", b.TargetConnectionString, wantTarget)
+			wantTarget := "projects/" + cfg.ProjectID + "/instances/" + cfg.InstanceID + "/databases/" + cfg.TargetDb
+			if b.TargetDb != wantTarget {
+				t.Errorf("TargetConnectionString = %q, want %q", b.TargetDb, wantTarget)
 			}
-			if b.ProjectID != tt.args.projectID {
-				t.Errorf("ProjectID = %q, want %q", b.ProjectID, tt.args.projectID)
+			if b.ProjectID != cfg.ProjectID {
+				t.Errorf("ProjectID = %q, want %q", b.ProjectID, cfg.ProjectID)
 			}
-			if b.InstanceID != tt.args.instanceID {
-				t.Errorf("InstanceID = %q, want %q", b.InstanceID, tt.args.instanceID)
+			if b.InstanceID != cfg.InstanceID {
+				t.Errorf("InstanceID = %q, want %q", b.InstanceID, cfg.InstanceID)
 			}
 		})
 	}
@@ -88,17 +88,16 @@ func TestSpannerBackup_Backup(t *testing.T) {
 	sourceName := container.validDatabaseName("source_database")
 	t.Logf("sourceName: %s\n", sourceName)
 
-	type args struct {
-		sourceDatabase string
+	cfg := SpannerBackup{
+		SourceDb: "does_not_exist",
+		TargetDb: "unused_target",
 	}
 	tests := []struct {
 		name    string
-		args    args
 		wantErr bool
 	}{
 		{
 			name:    "backup non-existent database",
-			args:    args{sourceDatabase: "does_not_exist"},
 			wantErr: true,
 		},
 	}
@@ -106,7 +105,7 @@ func TestSpannerBackup_Backup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			b, err := NewSpannerBackup(ctx, container.projectID, container.instanceID, tt.args.sourceDatabase, "unused_target", container.opts...)
+			b, err := NewSpannerBackup(ctx, cfg, container.opts...)
 			if err != nil {
 				t.Fatalf("NewSpannerBackup(): %s", err)
 			}
@@ -146,7 +145,14 @@ func TestSpannerBackup_BackupCanceledContext(t *testing.T) {
 
 	sourceName := container.validDatabaseName("cancel_source")
 
-	b, err := NewSpannerBackup(ctx, container.projectID, container.instanceID, sourceName, "unused_target", container.opts...)
+	cfg := SpannerBackup{
+		ProjectID:  container.projectID,
+		InstanceID: container.instanceID,
+		SourceDb:   sourceName,
+		TargetDb:   "unused_target",
+	}
+
+	b, err := NewSpannerBackup(ctx, cfg, container.opts...)
 	if err != nil {
 		t.Fatalf("NewSpannerBackup(): %s", err)
 	}
