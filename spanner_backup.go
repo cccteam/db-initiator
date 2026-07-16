@@ -66,7 +66,7 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 
 	eligible, age := s.validateDatabaseBackupAge(backup)
 	if !eligible {
-		log.Printf("recent backup age: %d does not satisfy age requirement: %d seconds. taking fresh backup\n", age, s.MaxBackupAge)
+		log.Printf("recent backup age: %d seconds does not satisfy age requirement: %d seconds. taking fresh backup\n", age, s.MaxBackupAge)
 
 		return backup, false, nil
 	}
@@ -219,7 +219,7 @@ func (s *SpannerBackup) validateDatabaseBackupAge(b *adminpb.Backup) (bool, int6
 	now := time.Now().Unix()
 	backupAge := now - b.CreateTime.GetSeconds()
 	if backupAge < s.MaxBackupAge {
-		log.Printf("most recent backup age: %d\n", backupAge)
+		log.Printf("most recent backup age: %d seconds\n", backupAge)
 
 		return true, backupAge
 	}
