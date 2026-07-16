@@ -240,7 +240,7 @@ func (s *SpannerBackup) checkExistingDatabase(ctx context.Context, databaseName 
 	})
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return err
+			return errors.Wrap(err, "checkExistingDatabase()")
 		}
 
 		return errors.Wrap(err, "s.admin.GetDatabase()")
