@@ -215,9 +215,9 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 	}
 }
 
-func (s *SpannerBackup) validateDatabaseBackupAge(b *adminpb.Backup) (bool, int64) {
+func (s *SpannerBackup) validateDatabaseBackupAge(b *adminpb.Backup) (valid bool, backupAge int64) {
 	now := time.Now().Unix()
-	backupAge := now - b.CreateTime.GetSeconds()
+	backupAge = now - b.CreateTime.GetSeconds()
 	if backupAge < s.MaxBackupAge {
 		log.Printf("most recent backup age: %d seconds\n", backupAge)
 
