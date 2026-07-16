@@ -241,7 +241,7 @@ func TestSpannerBackup_validateDatabaseBackupAge(t *testing.T) {
 				CreateTime: timestamppb.New(time.Now().Add(-tt.age)),
 			}
 
-			if got := s.validateDatabaseBackupAge(backup); got != tt.want {
+			if got, _ := s.validateDatabaseBackupAge(backup); got != tt.want {
 				t.Errorf("validateDatabaseBackupAge() = %v, want %v", got, tt.want)
 			}
 		})

@@ -42,7 +42,7 @@ func NewSpannerBackup(ctx context.Context, cfg *SpannerBackup, opts ...option.Cl
 }
 
 func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backup, bool, error) {
-	log.Println("getting most recent backups")
+	log.Println("getting most recent backup")
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
 	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
 	// Filter databases on exact match and only backups that are "READY" - meaning they are ready to be restored elsewhere
@@ -64,9 +64,9 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 		return nil, false, errors.Wrap(err, "getMostRecentBackup()")
 	}
 
-	eligible := s.validateDatabaseBackupAge(backup)
+	eligible, age := s.validateDatabaseBackupAge(backup)
 	if !eligible {
-		log.Printf("recent backup age does not satisfy age requirement: %d seconds. taking fresh backup\n", s.MaxBackupAge)
+		log.Printf("recent backup age: %d does not satisfy age requirement: %d seconds. taking fresh backup\n", age, s.MaxBackupAge)
 
 		return backup, false, nil
 	}
@@ -215,15 +215,16 @@ func (s *SpannerBackup) Restore(ctx context.Context, backup *adminpb.Backup, tar
 	}
 }
 
-func (s *SpannerBackup) validateDatabaseBackupAge(b *adminpb.Backup) bool {
+func (s *SpannerBackup) validateDatabaseBackupAge(b *adminpb.Backup) (bool, int64) {
 	now := time.Now().Unix()
-	if (now - b.CreateTime.GetSeconds()) < s.MaxBackupAge {
-		log.Printf("most recent backup is newer than desired age: %d\n", s.MaxBackupAge)
+	backupAge := now - b.CreateTime.GetSeconds()
+	if backupAge < s.MaxBackupAge {
+		log.Printf("most recent backup age: %d\n", backupAge)
 
-		return true
+		return true, backupAge
 	}
 
-	return false
+	return false, backupAge
 }
 
 func (s *SpannerBackup) checkExistingDatabase(ctx context.Context, databaseName string) error {
