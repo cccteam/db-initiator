@@ -27,6 +27,9 @@ type SpannerBackup struct {
 }
 
 func NewSpannerBackup(ctx context.Context, cfg *SpannerBackup, opts ...option.ClientOption) (*SpannerBackup, error) {
+	if cfg == nil {
+		return nil, errors.New("empty SpannerBackup config")
+	}
 	adminClient, err := spannerDB.NewDatabaseAdminClient(ctx, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "spannerDB.NewDatabaseAdminClient()")
@@ -237,7 +240,7 @@ func (s *SpannerBackup) checkExistingDatabase(ctx context.Context, databaseName 
 	})
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			return errors.Wrap(err, "checkExistingDatabase()")
+			return err
 		}
 
 		return errors.Wrap(err, "s.admin.GetDatabase()")

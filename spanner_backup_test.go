@@ -89,7 +89,9 @@ func TestSpannerBackup_Backup(t *testing.T) {
 	t.Logf("sourceName: %s\n", sourceName)
 
 	cfg := SpannerBackup{
-		SourceDb: "does_not_exist",
+		ProjectID:  container.projectID,
+		InstanceID: container.instanceID,
+		SourceDb:   "does_not_exist",
 	}
 	tests := []struct {
 		name    string
