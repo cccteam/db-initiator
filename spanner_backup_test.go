@@ -208,7 +208,6 @@ func TestSpannerBackup_RestoreTargetExists(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), want) {
 		t.Fatalf("SpannerBackup.Restore() error = %v, want error container %q", err, want)
 	}
-
 }
 
 func TestSpannerBackup_validateDatabaseBackupAge(t *testing.T) {
