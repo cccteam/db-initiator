@@ -6,13 +6,14 @@ A Go library for database testing and migrations. Spin up ephemeral containerize
 
 - **Ephemeral test databases** – Start Docker containers for isolated integration testing
 - **Database migrations** – Run schema and data migrations using [golang-migrate](https://github.com/golang-migrate/migrate)
+- **Backup and restore** - (Spanner only) - Supports backing up and restoring Spanner databases.  Supports setting backup age limit (in seconds) via `MaxBackupAge` property
 
 ## Supported Databases
 
-| Database | Container | Migrations |
-|----------|-----------|------------|
-| PostgreSQL | ✓ | ✓* |
-| Spanner | ✓ (emulator) | ✓ |
+| Database | Container | Migrations | Backup/Restore |
+|----------|-----------|------------|----------------|
+| PostgreSQL | ✓ | ✓* | ✗ |
+| Spanner | ✓ (emulator) | ✓ | ✓ |
 
 #### *PostgreSQL Limitations
 
