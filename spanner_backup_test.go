@@ -3,6 +3,7 @@ package dbinitiator
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -202,9 +203,12 @@ func TestSpannerBackup_RestoreTargetExists(t *testing.T) {
 		Name: fmt.Sprintf("projects/%s/instances/%s/backups/some_backup", container.projectID, container.instanceID),
 	}
 
-	if err := b.Restore(ctx, backup, targetName); err == nil {
-		t.Fatal("SpannerBackup.Restore() with existing target error = nil, want error")
+	err = b.Restore(ctx, backup, targetName)
+	want := fmt.Sprintf("target database %s exists and must be dropped", targetName)
+	if err == nil || !strings.Contains(err.Error(), want) {
+		t.Fatalf("SpannerBackup.Restore() error = %v, want error container %q", err, want)
 	}
+
 }
 
 func TestSpannerBackup_validateDatabaseBackupAge(t *testing.T) {
