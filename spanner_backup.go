@@ -16,7 +16,10 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var errNoBackups = errors.New("no backups found")
+var (
+	errNoBackups    = errors.New("no backups found")
+	errBackupTooOld = errors.New("most recent backup is too old")
+)
 
 type SpannerBackup struct {
 	SourceDb     string
@@ -44,7 +47,7 @@ func NewSpannerBackup(ctx context.Context, cfg *SpannerBackup, opts ...option.Cl
 	}, nil
 }
 
-func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backup, bool, error) {
+func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backup, error) {
 	log.Println("getting most recent backup")
 	instance := fmt.Sprintf("projects/%s/instances/%s", s.ProjectID, s.InstanceID)
 	db := fmt.Sprintf("projects/%s/instances/%s/databases/%s", s.ProjectID, s.InstanceID, s.SourceDb)
@@ -61,20 +64,22 @@ func (s *SpannerBackup) getMostRecentBackup(ctx context.Context) (*adminpb.Backu
 	backupIt := s.admin.ListBackups(ctx, req)
 	backup, err := backupIt.Next()
 	if errors.Is(err, iterator.Done) {
-		return nil, false, errNoBackups
+		log.Println("no backups found")
+
+		return nil, errNoBackups
 	}
-	if err != nil {
-		return nil, false, errors.Wrap(err, "getMostRecentBackup()")
+	if err != nil && !errors.Is(err, iterator.Done) {
+		return nil, errors.Wrap(err, "getMostRecentBackup()")
 	}
 
 	eligible, age := s.validateDatabaseBackupAge(backup)
 	if !eligible {
 		log.Printf("recent backup age: %d seconds does not satisfy age requirement: %d seconds. taking fresh backup\n", age, s.MaxBackupAge)
 
-		return backup, false, nil
+		return nil, errBackupTooOld
 	}
 
-	return backup, true, nil
+	return backup, nil
 }
 
 func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
@@ -84,23 +89,22 @@ func (s *SpannerBackup) Backup(ctx context.Context) (*adminpb.Backup, error) {
 
 	if err := s.checkExistingDatabase(ctx, s.SourceDb); err != nil {
 		if status.Code(err) == codes.NotFound {
-			log.Printf("database %s does not exist", s.SourceDb)
+			log.Printf("database %s does not exist\n", s.SourceDb)
 		}
 
 		return nil, errors.Wrap(err, "Backup()")
 	}
 
-	backup, ok, err := s.getMostRecentBackup(ctx)
-
-	switch {
-	case err == nil && ok:
-		return backup, nil
-	case errors.Is(err, errNoBackups):
-		log.Printf("no backups found for database: %s. proceeding to take fresh backup.", s.SourceDb)
-	case err != nil:
-		return nil, errors.Wrap(err, "Backup()")
+	backup, err := s.getMostRecentBackup(ctx)
+	if err != nil && !errors.Is(err, errNoBackups) && !errors.Is(err, errBackupTooOld) {
+		return nil, errors.Wrap(err, "s.getMostRecentBackup()")
 	}
 
+	if backup != nil {
+		return backup, nil
+	}
+
+	log.Println("generating new backup request")
 	ts := time.Now().AddDate(0, 0, 7).UTC()                                                     // Will back up for 1 week
 	backupStamp := fmt.Sprintf("%s%03d", ts.Format("20060102_150405"), ts.Nanosecond()/1000000) // The display name of the restored database
 	req := &adminpb.CreateBackupRequest{
