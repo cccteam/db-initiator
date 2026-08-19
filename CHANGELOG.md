@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.14](https://github.com/cccteam/db-initiator/compare/v0.3.13...v0.3.14) (2026-08-19)
+
+
+### Bug Fixes
+
+* **backup:** remove drop database logic and enhance backup retrieval ([#170](https://github.com/cccteam/db-initiator/issues/170)) ([7f7732c](https://github.com/cccteam/db-initiator/commit/7f7732c6e9723560d5fbffb362ac892c76c238ab))
+
+
+### Code Upgrade
+
+* go =&gt; 1.26.6 ([#179](https://github.com/cccteam/db-initiator/issues/179)) ([7a839c2](https://github.com/cccteam/db-initiator/commit/7a839c2a3320165b92a99864c8e4ea22f2ff6441))
+
 ## [0.3.13](https://github.com/cccteam/db-initiator/compare/v0.3.12...v0.3.13) (2026-07-23)
 
 
