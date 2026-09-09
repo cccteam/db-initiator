@@ -3,6 +3,7 @@ package dbinitiator
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/spanner"
 	spannerDB "cloud.google.com/go/spanner/admin/database/apiv1"
@@ -13,8 +14,10 @@ import (
 	"github.com/golang-migrate/migrate/v4/database"
 	spannerDriver "github.com/golang-migrate/migrate/v4/database/spanner"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // up/down script file source driver for the migrate package
+	gax "github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc/codes"
 )
 
 // SpannerMigrator handles connecting to an existing spanner database and running migrations
@@ -46,6 +49,22 @@ func NewSpannerMigrator(ctx context.Context, projectID, instanceID, dbName strin
 		client.Close()
 
 		return nil, errors.Wrap(err, "database.NewDatabaseAdminClient()")
+	}
+
+	// A schema migration is a long-running operation that op.Wait polls via
+	// GetOperation. The generated defaults give each poll a 10s timeout and
+	// retry only Unavailable, so one slow poll aborts the wait with
+	// DeadlineExceeded while Spanner keeps applying the DDL server-side --
+	// leaving a half-built database behind a red build.
+	adminClient.LROClient.CallOptions.GetOperation = []gax.CallOption{
+		gax.WithTimeout(2 * time.Minute),
+		gax.WithRetry(func() gax.Retryer {
+			return gax.OnCodes([]codes.Code{codes.Unavailable, codes.DeadlineExceeded}, gax.Backoff{
+				Initial:    500 * time.Millisecond,
+				Max:        10 * time.Second,
+				Multiplier: 2.0,
+			})
+		}),
 	}
 
 	return &SpannerMigrator{
