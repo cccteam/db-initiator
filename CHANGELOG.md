@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.16](https://github.com/cccteam/db-initiator/compare/v0.3.15...v0.3.16) (2026-09-09)
+
+
+### Bug Fixes
+
+* retry DeadlineExceeded when polling schema migration operations ([#187](https://github.com/cccteam/db-initiator/issues/187)) ([9e76b35](https://github.com/cccteam/db-initiator/commit/9e76b35928702e2cfc70455d1122ae48c60b852c))
+
 ## [0.3.15](https://github.com/cccteam/db-initiator/compare/v0.3.14...v0.3.15) (2026-09-09)
 
 
