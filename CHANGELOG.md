@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.15](https://github.com/cccteam/db-initiator/compare/v0.3.14...v0.3.15) (2026-09-09)
+
+
+### Code Upgrade
+
+* go deps ([#184](https://github.com/cccteam/db-initiator/issues/184)) ([e94f9f2](https://github.com/cccteam/db-initiator/commit/e94f9f29989cc155f27ee759f49708cb131fbaaa))
+
 ## [0.3.14](https://github.com/cccteam/db-initiator/compare/v0.3.13...v0.3.14) (2026-08-19)
 
 
