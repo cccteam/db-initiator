@@ -43,12 +43,14 @@ func NewSpannerDatabase(ctx context.Context, projectID, instanceID, dbName strin
 	return db, nil
 }
 
+// newSpannerDatabase creates the database, then the client on it. The client
+// comes second on purpose: a spanner.Client starts creating its session as soon
+// as it is built, and a session requested before the database exists is
+// answered "Database not found"; a query that arrives while that request is
+// still in flight fails with it, which a consumer's CI met on its first query
+// of a just-created database.
 func newSpannerDatabase(ctx context.Context, adminClient *spannerDB.DatabaseAdminClient, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerDB, error) {
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
-	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{DisableNativeMetrics: true}, opts...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
-	}
 
 	op, err := adminClient.CreateDatabase(ctx,
 		&databasepb.CreateDatabaseRequest{
@@ -62,6 +64,15 @@ func newSpannerDatabase(ctx context.Context, adminClient *spannerDB.DatabaseAdmi
 
 	if _, err := op.Wait(ctx); err != nil {
 		return nil, errors.Wrapf(err, "database.CreateDatabaseOperation.Wait()")
+	}
+
+	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{DisableNativeMetrics: true}, opts...)
+	if err != nil {
+		if dropErr := adminClient.DropDatabase(ctx, &databasepb.DropDatabaseRequest{Database: dbStr}); dropErr != nil {
+			return nil, errors.Wrap(errors.Join(err, dropErr), "spanner.NewClientWithConfig(), and the database it was for could not be dropped")
+		}
+
+		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
 	}
 
 	return &SpannerDB{
