@@ -76,7 +76,9 @@ linters:
             - github.com/cccteam/logger
             - github.com/docker/go-connections
             - github.com/go-playground/errors/v5
-            - github.com/golang-migrate/migrate/v4
+            - github.com/cloudspannerecosystem/memefish
+            - github.com/cccteam/db-initiator/internal/runner
+            - github.com/google/go-cmp/cmp
             - github.com/googleapis/gax-go/v2
             - github.com/jackc/pgx-shopspring-decimal
             - github.com/jackc/pgx/v5
@@ -151,10 +153,6 @@ linters:
           - nlreturn
           - scopelint
         path: _test\.go
-      - linters:
-          - gomoddirectives
-        path: go.mod
-        text: migrate
     paths:
       - third_party$
       - builtin$

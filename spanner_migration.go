@@ -8,16 +8,20 @@ import (
 	"cloud.google.com/go/spanner"
 	spannerDB "cloud.google.com/go/spanner/admin/database/apiv1"
 	adminpb "cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
+	"github.com/cccteam/db-initiator/internal/runner"
 	ccclogger "github.com/cccteam/logger"
 	"github.com/go-playground/errors/v5"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database"
-	spannerDriver "github.com/golang-migrate/migrate/v4/database/spanner"
-	_ "github.com/golang-migrate/migrate/v4/source/file" // up/down script file source driver for the migrate package
 	gax "github.com/googleapis/gax-go/v2"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc/codes"
+)
+
+// The version tables a [SpannerMigrator] uses unless told otherwise, and the one a
+// [SpannerDB] uses.
+const (
+	defaultSchemaMigrationsTable = "SchemaMigrations"
+	defaultDataMigrationsTable   = "DataMigrations"
 )
 
 // SpannerMigrator handles connecting to an existing spanner database and running migrations
@@ -68,8 +72,8 @@ func NewSpannerMigrator(ctx context.Context, projectID, instanceID, dbName strin
 	}
 
 	return &SpannerMigrator{
-		dataMigrationsTable:   "DataMigrations",
-		schemaMigrationsTable: "SchemaMigrations",
+		dataMigrationsTable:   defaultDataMigrationsTable,
+		schemaMigrationsTable: defaultSchemaMigrationsTable,
 		connectionString:      dbStr,
 		databaseName:          dbName,
 		admin:                 adminClient,
@@ -91,25 +95,71 @@ func (s *SpannerMigrator) WithDataMigrationsTable(table string) *SpannerMigrator
 	return s
 }
 
-// MigrateUpSchema will migrate all the way up, applying all up migrations from the sourceURL
+// MigrateUpSchema applies every pending up migration from the sourceURL, recording the
+// versions in the schema migrations table. A database already at the last version is a
+// normal result, not an error. A file that fails part-way leaves the version dirty with its
+// progress recorded, reported as a [DirtyError]; the next run continues from the failed
+// statement once the cause is fixed.
 //
 // Use for DDL migrations
 func (s *SpannerMigrator) MigrateUpSchema(ctx context.Context, sourceURL string) error {
 	ccclogger.FromCtx(ctx).Infof("Applying schema migrations from %s", sourceURL)
-	if err := s.migrateUp(s.schemaMigrationsTable, sourceURL); err != nil {
+	if err := s.migrateUp(ctx, s.schemaMigrationsTable, sourceURL); err != nil {
 		return errors.Wrap(err, "SpannerMigrator.migrateUp()")
 	}
 
 	return nil
 }
 
-// MigrateUpData will apply all data migrations from the sourceURL
+// MigrateUpData applies every pending up migration from the sourceURL, recording the
+// versions in the data migrations table. It behaves as [SpannerMigrator.MigrateUpSchema].
 //
 // Use for DML migrations
 func (s *SpannerMigrator) MigrateUpData(ctx context.Context, sourceURL string) error {
 	ccclogger.FromCtx(ctx).Infof("Applying data migrations from %s", sourceURL)
-	if err := s.migrateUp(s.dataMigrationsTable, sourceURL); err != nil {
+	if err := s.migrateUp(ctx, s.dataMigrationsTable, sourceURL); err != nil {
 		return errors.Wrap(err, "SpannerMigrator.migrateUp()")
+	}
+
+	return nil
+}
+
+// SchemaVersion reads the schema migrations table.
+func (s *SpannerMigrator) SchemaVersion(ctx context.Context) (Version, error) {
+	v, err := s.runner(s.schemaMigrationsTable).Version(ctx)
+	if err != nil {
+		return Version{}, errors.Wrap(err, "runner.Spanner.Version()")
+	}
+
+	return v, nil
+}
+
+// DataVersion reads the data migrations table.
+func (s *SpannerMigrator) DataVersion(ctx context.Context) (Version, error) {
+	v, err := s.runner(s.dataMigrationsTable).Version(ctx)
+	if err != nil {
+		return Version{}, errors.Wrap(err, "runner.Spanner.Version()")
+	}
+
+	return v, nil
+}
+
+// ForceSchema sets the schema migrations table to a version, clean, with no progress
+// recorded; -1 leaves the database with no version. For when the runner cannot tell what
+// state the database is in.
+func (s *SpannerMigrator) ForceSchema(ctx context.Context, version int) error {
+	if err := s.runner(s.schemaMigrationsTable).Force(ctx, version); err != nil {
+		return errors.Wrap(err, "runner.Spanner.Force()")
+	}
+
+	return nil
+}
+
+// ForceData sets the data migrations table to a version, as [SpannerMigrator.ForceSchema]
+// does for the schema.
+func (s *SpannerMigrator) ForceData(ctx context.Context, version int) error {
+	if err := s.runner(s.dataMigrationsTable).Force(ctx, version); err != nil {
+		return errors.Wrap(err, "runner.Spanner.Force()")
 	}
 
 	return nil
@@ -184,37 +234,22 @@ func (s *SpannerMigrator) Close() error {
 	return nil
 }
 
-func (s *SpannerMigrator) migrateUp(migrationsTable, sourceURL string) error {
-	m, err := s.newMigrate(migrationsTable, sourceURL)
+func (s *SpannerMigrator) migrateUp(ctx context.Context, migrationsTable, sourceURL string) error {
+	src, err := runner.Open(sourceURL)
 	if err != nil {
-		return errors.Wrap(err, "SpannerMigrator.newMigrate()")
+		return errors.Wrap(err, "runner.Open()")
 	}
 
-	if err := m.Up(); err != nil {
-		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", sourceURL)
+	if err := s.runner(migrationsTable).Up(ctx, src); err != nil {
+		return errors.Wrapf(err, "runner.Spanner.Up(): %s", sourceURL)
 	}
 
 	return nil
 }
 
-// newMigrate creates a new migrate instance
-func (s *SpannerMigrator) newMigrate(migrationsTable, sourceURL string) (*migrate.Migrate, error) {
-	conf := &spannerDriver.Config{DatabaseName: s.connectionString, CleanStatements: true, MigrationsTable: migrationsTable}
-	spannerInstance, err := spannerDriver.WithInstance(
-		spannerDriver.NewDB(*s.admin, *s.client),
-		conf,
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "spannerDriver.WithInstance()")
-	}
-
-	m, err := migrate.NewWithDatabaseInstance(sourceURL, "spanner", spannerInstance)
-	if err != nil {
-		return nil, errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", sourceURL, s.connectionString)
-	}
-	m.Log = new(logger)
-
-	return m, nil
+// runner returns the migration runner keeping its versions in migrationsTable.
+func (s *SpannerMigrator) runner(migrationsTable string) *runner.Spanner {
+	return runner.NewSpanner(s.admin, s.client, s.connectionString, migrationsTable)
 }
 
 func (s *SpannerMigrator) viewDropStatements(ctx context.Context) ([]string, error) {
@@ -341,7 +376,7 @@ func (s *SpannerMigrator) indexDropStatements(ctx context.Context) ([]string, er
 
 		var stmt string
 		if err := row.Columns(&stmt); err != nil {
-			return nil, &database.Error{OrigErr: err}
+			return nil, errors.Wrap(err, "spanner.Row.Columns()")
 		}
 		stmts = append(stmts, stmt)
 	}
