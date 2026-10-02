@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0](https://github.com/cccteam/db-initiator/compare/v0.3.16...v0.4.0) (2026-10-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* golang-migrate is no longer a dependency, so every consumer deletes the `replace github.com/golang-migrate/migrate/v4 => github.com/jtwatson/migrate/v4` line from its go.mod and every `migrate.ErrNoChange` check (a database with nothing to apply is a nil result), and `Migrator` gains `SchemaVersion`, `DataVersion`, `ForceSchema` and `ForceData`. The README's "Upgrading from 0.3" section says how.
+
+### Features
+
+* a runner of the library's own replaces golang-migrate, and a Spanner file that fails part-way resumes from its failed statement ([5e817c3](https://github.com/cccteam/db-initiator/commit/5e817c3d75e9b8d1c9930102d438a70f719d5d41))
+
 ## [0.3.16](https://github.com/cccteam/db-initiator/compare/v0.3.15...v0.3.16) (2026-09-09)
 
 
