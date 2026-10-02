@@ -12,4 +12,16 @@ type Migrator interface {
 
 	// MigrateDropSchema drops the database schema.
 	MigrateDropSchema(ctx context.Context) error
+
+	// SchemaVersion reads the schema migrations table.
+	SchemaVersion(ctx context.Context) (Version, error)
+
+	// DataVersion reads the data migrations table.
+	DataVersion(ctx context.Context) (Version, error)
+
+	// ForceSchema sets the schema migrations table to a version, clean; -1 means no version.
+	ForceSchema(ctx context.Context, version int) error
+
+	// ForceData sets the data migrations table to a version, clean; -1 means no version.
+	ForceData(ctx context.Context, version int) error
 }

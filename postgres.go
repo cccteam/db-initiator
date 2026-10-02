@@ -12,8 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/moby/moby/api/types/network"
 
-	_ "github.com/golang-migrate/migrate/v4/database/postgres" // database driver for the migrate package
-	_ "github.com/golang-migrate/migrate/v4/source/file"       // up/down script file source driver for the migrate package
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )

@@ -3,8 +3,8 @@ package dbinitiator
 import (
 	"context"
 
+	"github.com/cccteam/db-initiator/internal/runner"
 	"github.com/go-playground/errors/v5"
-	"github.com/golang-migrate/migrate/v4"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -65,52 +65,49 @@ func (db *PostgresDatabase) Schema() string {
 	return db.schema
 }
 
-// MigrateUp will migrate all the way up, applying all up migrations from all sourceURL's
+// MigrateUp applies every up migration of every sourceURL, in the order given. Each source
+// is applied from its own first version: the migrations table is reset before each one, so
+// a test can layer an application's schema and then its fixtures, each numbered from 1.
 func (db *PostgresDatabase) MigrateUp(sourceURL ...string) error {
+	ctx := context.Background()
+	r := db.runner()
+
 	for _, source := range sourceURL {
-		m, err := migrate.New(source, db.connStr)
+		src, err := runner.Open(source)
 		if err != nil {
-			return errors.Wrapf(err, "migrate.New(): fileURL=%s and connectionURL=%s", source, db.connStr)
+			return errors.Wrap(err, "runner.Open()")
 		}
 
-		if _, _, err := m.Version(); err == nil {
-			if err := m.Force(-1); err != nil {
-				return errors.Wrapf(err, "migrate.Migrate.Force(): %s", source)
-			}
+		if err := r.Force(ctx, -1); err != nil {
+			return errors.Wrapf(err, "runner.Postgres.Force(): %s", source)
 		}
 
-		if err := m.Up(); err != nil {
-			return errors.Wrapf(err, "migrate.Migrate.Up(): %s", source)
-		}
-
-		if err, dbErr := m.Close(); err != nil {
-			return errors.Wrapf(err, "migrate.Migrate.Close(): source error: %s", source)
-		} else if dbErr != nil {
-			return errors.Wrapf(dbErr, "migrate.Migrate.Close(): database error: %s", source)
+		if err := r.Up(ctx, src); err != nil {
+			return errors.Wrapf(err, "runner.Postgres.Up(): %s", source)
 		}
 	}
 
 	return nil
 }
 
-// MigrateDown will migrate all the way down
+// MigrateDown reverts every version of the sourceURL, from the database's current version
+// down to no version.
 func (db *PostgresDatabase) MigrateDown(sourceURL string) error {
-	m, err := migrate.New(sourceURL, db.connStr)
+	src, err := runner.Open(sourceURL)
 	if err != nil {
-		return errors.Wrapf(err, "failed to create new migrate with fileURL=%s and connectionURL=%s", sourceURL, db.connStr)
+		return errors.Wrap(err, "runner.Open()")
 	}
 
-	if err := m.Down(); err != nil {
-		return errors.Wrap(err, "migrate.Migrate.Down()")
-	}
-
-	if err, dbErr := m.Close(); err != nil {
-		return errors.Wrap(err, "migrate.Migrate.Close(): source error")
-	} else if dbErr != nil {
-		return errors.Wrap(dbErr, "migrate.Migrate.Close(): database error")
+	if err := db.runner().Down(context.Background(), src); err != nil {
+		return errors.Wrapf(err, "runner.Postgres.Down(): %s", sourceURL)
 	}
 
 	return nil
+}
+
+// runner returns the migration runner on the migrations table.
+func (db *PostgresDatabase) runner() *runner.Postgres {
+	return runner.NewPostgres(db.Pool, postgresMigrationsTable)
 }
 
 // Close closes the database connection

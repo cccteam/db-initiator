@@ -9,10 +9,8 @@ import (
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
 	instanceadm "cloud.google.com/go/spanner/admin/instance/apiv1/instancepb"
+	"github.com/cccteam/db-initiator/internal/runner"
 	"github.com/go-playground/errors/v5"
-	"github.com/golang-migrate/migrate/v4"
-	migratedb "github.com/golang-migrate/migrate/v4/database"
-	spannerDriver "github.com/golang-migrate/migrate/v4/database/spanner"
 	"google.golang.org/api/option"
 )
 
@@ -45,12 +43,14 @@ func NewSpannerDatabase(ctx context.Context, projectID, instanceID, dbName strin
 	return db, nil
 }
 
+// newSpannerDatabase creates the database, then the client on it. The client
+// comes second on purpose: a spanner.Client starts creating its session as soon
+// as it is built, and a session requested before the database exists is
+// answered "Database not found"; a query that arrives while that request is
+// still in flight fails with it, which a consumer's CI met on its first query
+// of a just-created database.
 func newSpannerDatabase(ctx context.Context, adminClient *spannerDB.DatabaseAdminClient, projectID, instanceID, dbName string, opts ...option.ClientOption) (*SpannerDB, error) {
 	dbStr := fmt.Sprintf("projects/%s/instances/%s/databases/%s", projectID, instanceID, dbName)
-	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{DisableNativeMetrics: true}, opts...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
-	}
 
 	op, err := adminClient.CreateDatabase(ctx,
 		&databasepb.CreateDatabaseRequest{
@@ -66,6 +66,15 @@ func newSpannerDatabase(ctx context.Context, adminClient *spannerDB.DatabaseAdmi
 		return nil, errors.Wrapf(err, "database.CreateDatabaseOperation.Wait()")
 	}
 
+	client, err := spanner.NewClientWithConfig(ctx, dbStr, spanner.ClientConfig{DisableNativeMetrics: true}, opts...)
+	if err != nil {
+		if dropErr := adminClient.DropDatabase(ctx, &databasepb.DropDatabaseRequest{Database: dbStr}); dropErr != nil {
+			return nil, errors.Wrap(errors.Join(err, dropErr), "spanner.NewClientWithConfig(), and the database it was for could not be dropped")
+		}
+
+		return nil, errors.Wrapf(err, "spanner.NewClientWithConfig()")
+	}
+
 	return &SpannerDB{
 		dbStr:  dbStr,
 		admin:  adminClient,
@@ -73,74 +82,50 @@ func newSpannerDatabase(ctx context.Context, adminClient *spannerDB.DatabaseAdmi
 	}, nil
 }
 
-// MigrateUp will migrate all the way up, applying all up migrations from all sourceURL's
+// MigrateUp applies every up migration of every sourceURL, in the order given. Each source
+// is applied from its own first version: the schema migrations table is reset before each
+// one, so a test can layer an application's schema and then its fixtures, each numbered
+// from 1.
 func (db *SpannerDB) MigrateUp(sourceURL ...string) error {
-	conf := &spannerDriver.Config{DatabaseName: db.dbStr, CleanStatements: true}
-	spannerInstance, err := spannerDriver.WithInstance(spannerDriver.NewDB(*db.admin, *db.Client), conf)
-	if err != nil {
-		return errors.Wrap(err, "spannerDriver.WithInstance()")
-	}
+	ctx := context.Background()
+	r := db.runner()
 
 	for _, source := range sourceURL {
-		if err := db.migrateUp(source, spannerInstance); err != nil {
-			return err
+		src, err := runner.Open(source)
+		if err != nil {
+			return errors.Wrap(err, "runner.Open()")
+		}
+
+		if err := r.Force(ctx, -1); err != nil {
+			return errors.Wrapf(err, "runner.Spanner.Force(): %s", source)
+		}
+
+		if err := r.Up(ctx, src); err != nil {
+			return errors.Wrapf(err, "runner.Spanner.Up(): %s", source)
 		}
 	}
 
 	return nil
 }
 
-func (db *SpannerDB) migrateUp(source string, spannerInstance migratedb.Driver) error {
-	m, err := migrate.NewWithDatabaseInstance(source, "spanner", spannerInstance)
-	if err != nil {
-		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", source, db.dbStr)
-	}
-	defer m.Close()
-
-	if _, _, err := m.Version(); !errors.Is(err, migrate.ErrNilVersion) {
-		if err := m.Force(-1); err != nil {
-			return errors.Wrapf(err, "migrate.Migrate.Force(): %s", source)
-		}
-	}
-
-	if err := m.Up(); err != nil {
-		return errors.Wrapf(err, "migrate.Migrate.Up(): %s", source)
-	}
-
-	if err, dbErr := m.Close(); err != nil {
-		return errors.Wrapf(err, "migrate.Migrate.Close(): source error: %s", source)
-	} else if dbErr != nil {
-		return errors.Wrapf(dbErr, "migrate.Migrate.Close(): database error: %s", source)
-	}
-
-	return nil
-}
-
-// MigrateDown will migrate all the way down
+// MigrateDown reverts every version of the sourceURL, from the database's current version
+// down to no version.
 func (db *SpannerDB) MigrateDown(sourceURL string) error {
-	conf := &spannerDriver.Config{DatabaseName: db.dbStr, CleanStatements: true}
-	spannerInstance, err := spannerDriver.WithInstance(spannerDriver.NewDB(*db.admin, *db.Client), conf)
+	src, err := runner.Open(sourceURL)
 	if err != nil {
-		return errors.Wrap(err, "spannerDriver.WithInstance()")
+		return errors.Wrap(err, "runner.Open()")
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(sourceURL, "spanner", spannerInstance)
-	if err != nil {
-		return errors.Wrapf(err, "migrate.NewWithDatabaseInstance(): fileURL=%s, db=%s", sourceURL, db.dbStr)
-	}
-	defer m.Close()
-
-	if err := m.Down(); err != nil {
-		return errors.Wrap(err, "migrate.Migrate.Down()")
-	}
-
-	if err, dbErr := m.Close(); err != nil {
-		return errors.Wrap(err, "migrate.Migrate.Close(): source error")
-	} else if dbErr != nil {
-		return errors.Wrap(dbErr, "migrate.Migrate.Close(): database error")
+	if err := db.runner().Down(context.Background(), src); err != nil {
+		return errors.Wrapf(err, "runner.Spanner.Down(): %s", sourceURL)
 	}
 
 	return nil
+}
+
+// runner returns the migration runner on the default schema migrations table.
+func (db *SpannerDB) runner() *runner.Spanner {
+	return runner.NewSpanner(db.admin, db.Client, db.dbStr, defaultSchemaMigrationsTable)
 }
 
 func (db *SpannerDB) DropDatabase(ctx context.Context) error {
