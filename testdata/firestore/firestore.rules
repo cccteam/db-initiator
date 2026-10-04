@@ -1,0 +1,10 @@
+rules_version = '2';
+// Every request made without the emulator's owner credential is refused, so a test can
+// tell that the emulator started with this file.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

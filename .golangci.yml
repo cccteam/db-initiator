@@ -72,6 +72,7 @@ linters:
             - $all
           allow:
             - $gostd
+            - cloud.google.com/go/firestore
             - cloud.google.com/go/spanner
             - github.com/cccteam/logger
             - github.com/docker/go-connections
