@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/cccteam/db-initiator/compare/v0.4.0...v0.4.1) (2026-10-05)
+
+
+### Features
+
+* NewFirestoreContainer starts the Firestore emulator for a test suite the way NewSpannerContainer starts the Spanner emulator, from the Cloud SDK emulators image of the SDK version it is given (gcr.io/google.com/cloudsdktool/google-cloud-cli:&lt;version&gt;-emulators running gcloud emulators firestore start), waiting until the emulator's root URL answers and returning a FirestoreContainer whose Host() is the host and port FIRESTORE_EMULATOR_HOST takes, with Terminate and Close as the Spanner container has them, and the option WithFirestoreRules(path) copies a security rules file into the container and starts the emulator with it, refusing a missing file before any container starts, so an application's suites that open the live service start the emulator without container code or a testcontainers dependency of their own; the README documents both starters under Emulators in tests; verified by TestNewFirestoreContainer (the emulator with and without the rules file, each writing and reading a document through cloud.google.com/go/firestore with FIRESTORE_EMULATOR_HOST set to Host() and reading anonymously over REST, which the rules file answers forbidden and the bare emulator not found, a missing rules file and a canceled context refused), build and vet, the full suite under the race detector, and lint at zero issues ([#194](https://github.com/cccteam/db-initiator/issues/194)) ([093365d](https://github.com/cccteam/db-initiator/commit/093365ddd6178948c1850232ba2ea649ce07fa8d))
+
 ## [0.4.0](https://github.com/cccteam/db-initiator/compare/v0.3.16...v0.4.0) (2026-10-02)
 
 
