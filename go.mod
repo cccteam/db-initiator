@@ -3,6 +3,7 @@ module github.com/cccteam/db-initiator
 go 1.26.6
 
 require (
+	cloud.google.com/go/firestore v1.26.0
 	cloud.google.com/go/spanner v1.95.0
 	github.com/cloudspannerecosystem/memefish v0.8.1
 	github.com/go-playground/errors/v5 v5.4.0

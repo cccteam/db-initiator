@@ -14,6 +14,7 @@ A Go library for database testing and migrations. Spin up ephemeral containerize
 |----------|-----------|------------|----------------|
 | PostgreSQL | ✓ | ✓* | ✗ |
 | Spanner | ✓ (emulator) | ✓ | ✓ |
+| Firestore | ✓ (emulator) | ✗ | ✗ |
 
 #### *PostgreSQL Limitations
 
@@ -22,6 +23,43 @@ Compared to the Spanner implementation, PostgreSQL currently has the following l
 - No separate schema vs data migrations (`MigrateUpData`, `DataVersion` and `ForceData` return an error)
 - No configurable migrations table name
 - `PostgresMigrator` does not implement `MigrateDropSchema`
+
+## Emulators in tests
+
+A test suite can start the Spanner emulator or the Firestore emulator, the local stand-ins Google ships for the two databases, with one call each, and needs no container code of its own. The containers start through the testcontainers library, so Docker and podman both serve. Start one emulator per package in `TestMain` and stop it after the run with `Terminate` and `Close`.
+
+### Spanner
+
+`NewSpannerContainer(ctx, "1.5.56")` starts the Spanner emulator image of that version and creates an instance on it. `CreateDatabase` then gives each test a database of its own.
+
+### Firestore
+
+`NewFirestoreContainer(ctx, "562.0.0")` starts the Firestore emulator from the Cloud SDK emulators image of that SDK version (`gcr.io/google.com/cloudsdktool/google-cloud-cli:562.0.0-emulators`) and waits until it answers. `Host()` returns the emulator's host and port, the value the `FIRESTORE_EMULATOR_HOST` variable takes: a Firestore client opened with the variable set talks to the emulator, with the emulator's owner credential, which security rules never apply to.
+
+`WithFirestoreRules(path)` copies a security rules file into the container and starts the emulator with it, so a request made without the owner credential, such as a browser's, is answered as the rules say. Without it the emulator has no rules file and allows every request.
+
+```go
+func TestMain(m *testing.M) {
+	ctx := context.Background()
+	emulator, err := dbinitiator.NewFirestoreContainer(ctx, "562.0.0", dbinitiator.WithFirestoreRules("firestore.rules"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := os.Setenv("FIRESTORE_EMULATOR_HOST", emulator.Host()); err != nil {
+		log.Fatal(err)
+	}
+
+	code := m.Run()
+
+	if err := emulator.Terminate(ctx); err != nil {
+		log.Print(err)
+	}
+	if err := emulator.Close(); err != nil {
+		log.Print(err)
+	}
+	os.Exit(code)
+}
+```
 
 ## Migrations
 
