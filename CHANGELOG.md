@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/cccteam/db-initiator/compare/v0.4.1...v0.4.2) (2026-10-06)
+
+
+### Features
+
+* PostgreSQL has the migration support Spanner has, backup and restore aside: PostgresMigrator keeps a data migrations table, data_migrations beside schema_migrations, so MigrateUpData, DataVersion and ForceData work instead of refusing, WithSchemaMigrationsTable and WithDataMigrationsTable name the tables as on Spanner, MigrateDropSchema drops everything the migrations created so they apply again from the start (the views, materialized views, tables, sequences, routines and types of every schema but PostgreSQL's own, in one transaction, skipping what an installed extension owns and leaving the schemas themselves in place, so a migration that creates one says IF NOT EXISTS), PostgresDatabase.DropDatabase drops a test database as SpannerDB's does, closing its pool and terminating the sessions left on the database, a connection error names the database rather than a connection string carrying the password, the examples cover the Postgres container and data migrations, and the README's PostgreSQL limitations go away; verified by TestNewPostgresMigrator, TestPostgresMigrator_MethodChaining, MigrateUpSchema, MigrateUpData, TableNames, MigrateDropSchema (views, materialized views, foreign keys, an enum, a domain, a composite type, a trigger function, a procedure, a sequence, a partitioned table and a second schema dropped, the btree_gist extension and the schemas kept, the migrations applied again), VersionAndForce and Lifecycle with the data table, TestPostgresDatabase_DropDatabase, the full suite against the Postgres and Spanner containers, build and vet, and lint at zero issues ([#197](https://github.com/cccteam/db-initiator/issues/197)) ([908ca8d](https://github.com/cccteam/db-initiator/commit/908ca8dbe57f719cb5c23e93c98410e4609dedbf))
+
 ## [0.4.1](https://github.com/cccteam/db-initiator/compare/v0.4.0...v0.4.1) (2026-10-05)
 
 
