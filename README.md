@@ -12,17 +12,9 @@ A Go library for database testing and migrations. Spin up ephemeral containerize
 
 | Database | Container | Migrations | Backup/Restore |
 |----------|-----------|------------|----------------|
-| PostgreSQL | ✓ | ✓* | ✗ |
+| PostgreSQL | ✓ | ✓ | ✗ |
 | Spanner | ✓ (emulator) | ✓ | ✓ |
 | Firestore | ✓ (emulator) | ✗ | ✗ |
-
-#### *PostgreSQL Limitations
-
-Compared to the Spanner implementation, PostgreSQL currently has the following limitations:
-
-- No separate schema vs data migrations (`MigrateUpData`, `DataVersion` and `ForceData` return an error)
-- No configurable migrations table name
-- `PostgresMigrator` does not implement `MigrateDropSchema`
 
 ## Emulators in tests
 
@@ -65,7 +57,9 @@ func TestMain(m *testing.M) {
 
 A migration source is a directory, given as `file://<path>`: relative to the working directory, or absolute as `file:///path`. It holds files named `<version>_<name>.up.sql` and, optionally, `<version>_<name>.down.sql`. The version is a number compared numerically, so leading zeros are fine. A `.sql` file whose name does not follow the convention is refused by name; files without the `.sql` suffix are ignored.
 
-`MigrateUpSchema` and `MigrateUpData` apply every file above the database's current version, ascending, and record the version in the `SchemaMigrations` and `DataMigrations` tables on Spanner, or `schema_migrations` on PostgreSQL. A database already at the last version is a normal result, not an error. `SchemaVersion`, `DataVersion`, `ForceSchema` and `ForceData` read and set the version tables; forcing `-1` leaves the database with no version.
+`MigrateUpSchema` and `MigrateUpData` apply every file above the database's current version, ascending, and record the version in the `SchemaMigrations` and `DataMigrations` tables on Spanner, or `schema_migrations` and `data_migrations` on PostgreSQL; `WithSchemaMigrationsTable` and `WithDataMigrationsTable` name other tables. A database already at the last version is a normal result, not an error. `SchemaVersion`, `DataVersion`, `ForceSchema` and `ForceData` read and set the version tables; forcing `-1` leaves the database with no version.
+
+`MigrateDropSchema` drops everything the migrations created, the version tables included, so the migrations apply again from the start. On Spanner it drops the views, foreign keys, search indexes, indexes and tables. On PostgreSQL it drops the views, materialized views, tables, sequences, routines and types of every schema but PostgreSQL's own, in one transaction, skipping what an installed extension owns; the schemas themselves stay, so a migration that creates one should say `IF NOT EXISTS`.
 
 ### Spanner
 
@@ -79,12 +73,16 @@ The run refuses, and says how to recover, when the file changed in its already-a
 
 Each file runs inside one transaction under an advisory lock, with the version row replaced in the same transaction: a file that fails rolls back whole and the version stays where it was, never dirty. Two runners started together on one database apply every file once between them. Statements that cannot run inside a transaction, such as `CREATE INDEX CONCURRENTLY`, are not supported.
 
+A test database made by `PostgresContainer.CreateDatabase` or `NewPostgresDatabase` is dropped with `DropDatabase`, which closes its connection pool and terminates the sessions still on the database; that needs PostgreSQL 13 or later.
+
 ## Upgrading from 0.3
 
 Release 0.4 replaces the golang-migrate library with the runner above. Every live database carries over: the version tables keep their names and columns, and gain the three progress columns on the first run. In each module that uses db-initiator:
 
 - delete the `replace github.com/golang-migrate/migrate/v4 ... => github.com/jtwatson/migrate/v4 ...` line from `go.mod` and run `go mod tidy`;
 - delete the `errors.Is(err, migrate.ErrNoChange)` checks and the import: a database with nothing to apply is a nil result now.
+
+On PostgreSQL the data-migration methods, the table names and `MigrateDropSchema` work as on Spanner from 0.5 on; nothing to change for a module that did not call them.
 
 ## License
 
