@@ -91,6 +91,26 @@ func ExampleSpannerMigrator_MigrateUpData() {
 	}
 }
 
+func ExamplePostgresContainer_CreateDatabase() {
+	ctx := context.Background()
+	container, err := NewPostgresContainer(ctx, "latest")
+	if err != nil {
+		panic(err)
+	}
+	defer container.Close()
+
+	db, err := container.CreateDatabase(ctx, "test_db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// Use the database..
+	if _, err := db.Exec(ctx, "SELECT 1"); err != nil {
+		panic(err)
+	}
+}
+
 func ExamplePostgresMigrator_MigrateUpSchema() {
 	ctx := context.Background()
 	container, err := NewPostgresContainer(ctx, "latest")
@@ -108,6 +128,31 @@ func ExamplePostgresMigrator_MigrateUpSchema() {
 	migrator := NewPostgresMigrator(container.superUsername, "password", container.host, container.port.Port(), db.dbName, SSLModeDisable)
 
 	if err := migrator.MigrateUpSchema(ctx, "file://testdata/postgres/migrations"); err != nil {
+		panic(err)
+	}
+}
+
+func ExamplePostgresMigrator_MigrateUpData() {
+	ctx := context.Background()
+	container, err := NewPostgresContainer(ctx, "latest")
+	if err != nil {
+		panic(err)
+	}
+	defer container.Close()
+
+	db, err := container.CreateDatabase(ctx, "test_db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	migrator := NewPostgresMigrator(container.superUsername, "password", container.host, container.port.Port(), db.dbName, SSLModeDisable)
+
+	if err := migrator.MigrateUpSchema(ctx, "file://testdata/postgres/migrations"); err != nil {
+		panic(err)
+	}
+
+	if err := migrator.MigrateUpData(ctx, "file://testdata/postgres/datamigrations"); err != nil {
 		panic(err)
 	}
 }

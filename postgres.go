@@ -158,10 +158,11 @@ func (pc *PostgresContainer) CreateDatabase(ctx context.Context, dbName string) 
 	}
 
 	return &PostgresDatabase{
-		Pool:    u,
-		dbName:  dbName,
-		schema:  pc.unprivilegedUsername,
-		connStr: PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName, SSLModeDisable),
+		Pool:         u,
+		dbName:       dbName,
+		schema:       pc.unprivilegedUsername,
+		connStr:      PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), dbName, SSLModeDisable),
+		adminConnStr: PostgresConnStr(pc.unprivilegedUsername, pc.password, pc.host, pc.port.Port(), pc.defaultDatabase, SSLModeDisable),
 	}, nil
 }
 

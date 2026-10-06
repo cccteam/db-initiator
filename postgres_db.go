@@ -15,17 +15,20 @@ type PostgresDatabase struct {
 	dbName  string
 	schema  string
 	connStr string
+	// adminConnStr connects, as the database's owner, to the server's maintenance database,
+	// from where [PostgresDatabase.DropDatabase] drops this one.
+	adminConnStr string
 }
 
 // NewPostgresDatabase creates a new database and schema, then connects to it.
 func NewPostgresDatabase(ctx context.Context, username, password, host, port, databaseToCreate, schemaToCreate string, sslMode SSLMode) (*PostgresDatabase, error) {
-	// a. Construct connection string for a default database (e.g., "postgres")
-	defaultDBConnStr := PostgresConnStr(username, password, host, port, "postgres", sslMode)
+	// a. Construct connection string for the maintenance database
+	defaultDBConnStr := PostgresConnStr(username, password, host, port, defaultPostgresDatabase, sslMode)
 
 	// b. Open a temporary admin connection to this default database
 	adminPool, err := openDB(ctx, defaultDBConnStr)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to connect to default database 'postgres' as user %s", username)
+		return nil, errors.Wrapf(err, "failed to connect to default database %q as user %s", defaultPostgresDatabase, username)
 	}
 	defer adminPool.Close()
 
@@ -53,10 +56,11 @@ func NewPostgresDatabase(ctx context.Context, username, password, host, port, da
 	}
 
 	return &PostgresDatabase{
-		Pool:    mainPool,
-		dbName:  databaseToCreate,
-		schema:  schemaToCreate,
-		connStr: targetDBConnStr,
+		Pool:         mainPool,
+		dbName:       databaseToCreate,
+		schema:       schemaToCreate,
+		connStr:      targetDBConnStr,
+		adminConnStr: defaultDBConnStr,
 	}, nil
 }
 
@@ -105,9 +109,29 @@ func (db *PostgresDatabase) MigrateDown(sourceURL string) error {
 	return nil
 }
 
-// runner returns the migration runner on the migrations table.
+// runner returns the migration runner on the default schema migrations table.
 func (db *PostgresDatabase) runner() *runner.Postgres {
-	return runner.NewPostgres(db.Pool, postgresMigrationsTable)
+	return runner.NewPostgres(db.Pool, defaultPostgresSchemaMigrationsTable)
+}
+
+// DropDatabase drops the database, closing its connection pool first. Other sessions on the
+// database are terminated, since PostgreSQL refuses to drop a database with sessions on it;
+// that needs PostgreSQL 13 or later, and the right to terminate them, which the database's
+// owner has over its own sessions.
+func (db *PostgresDatabase) DropDatabase(ctx context.Context) error {
+	db.Pool.Close()
+
+	admin, err := openDB(ctx, db.adminConnStr)
+	if err != nil {
+		return errors.Wrap(err, "connecting to the maintenance database")
+	}
+	defer admin.Close()
+
+	if _, err := admin.Exec(ctx, "DROP DATABASE "+pgx.Identifier{db.dbName}.Sanitize()+" WITH (FORCE)"); err != nil {
+		return errors.Wrapf(err, "dropping database %s", db.dbName)
+	}
+
+	return nil
 }
 
 // Close closes the database connection
