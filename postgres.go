@@ -3,6 +3,8 @@ package dbinitiator
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -231,22 +233,26 @@ func (pc *PostgresContainer) validDatabaseName(dbName string) string {
 	return dbName
 }
 
-// PostgresConnStr builds a postgres connection URL.
+// PostgresConnStr builds a postgres connection URL. The username, the password and the
+// database name are percent-encoded, so a name with a space or a reserved character,
+// which Postgres allows, parses as the URL it is meant to be (pgx v5.11.0 refuses a URL
+// with a bare space in it).
 // sslMode sets the sslmode query parameter.
 // Pass an empty string to use the default, which is [SSLModeRequire].
 func PostgresConnStr(username, password, host, port, database string, sslMode SSLMode) string {
 	if sslMode == "" {
 		sslMode = SSLModeRequire
 	}
+	u := url.URL{
+		Scheme:   "postgresql",
+		User:     url.UserPassword(username, password),
+		Host:     net.JoinHostPort(host, port),
+		Path:     "/" + database,
+		RawPath:  "/" + url.PathEscape(database),
+		RawQuery: "sslmode=" + string(sslMode),
+	}
 
-	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
-		username,
-		password,
-		host,
-		port,
-		database,
-		string(sslMode),
-	)
+	return u.String()
 }
 
 func openDB(ctx context.Context, connectionString string) (*pgxpool.Pool, error) {
