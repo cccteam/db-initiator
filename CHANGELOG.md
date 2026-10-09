@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.3](https://github.com/cccteam/db-initiator/compare/v0.4.2...v0.4.3) (2026-10-09)
+
+
+### Bug Fixes
+
+* PostgresConnStr percent-encodes the user, the password and the database name, which pgx v5.11.0's parser requires ([#202](https://github.com/cccteam/db-initiator/issues/202)) ([1b56bc6](https://github.com/cccteam/db-initiator/commit/1b56bc6f3cc6838423bb47625e1b0289ad7eae9f))
+
+
+### Code Upgrade
+
+* **deps:** bump the go-dependencies group across 1 directory with 6 updates ([#196](https://github.com/cccteam/db-initiator/issues/196)) ([b3ed0f7](https://github.com/cccteam/db-initiator/commit/b3ed0f7fb353a1e64761e4890c8ce0aaa82b57cc))
+* **deps:** Go 1.26.9 and golang.org/x/net v0.60.0; net/http GO-2026-6612, GO-2026-6613 and GO-2026-6617 fixed ([#201](https://github.com/cccteam/db-initiator/issues/201)) ([bafd572](https://github.com/cccteam/db-initiator/commit/bafd57277ea91798be77806e7f59772d462a534f))
+* **deps:** the security scan runs golang-security-scan v8.2.1 and names its Grype switch ([#183](https://github.com/cccteam/db-initiator/issues/183)) ([86e4375](https://github.com/cccteam/db-initiator/commit/86e43759bc7c10acf40c3a4002cabd7f9c8e8dac))
+
 ## [0.4.2](https://github.com/cccteam/db-initiator/compare/v0.4.1...v0.4.2) (2026-10-06)
 
 
