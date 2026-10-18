@@ -155,6 +155,21 @@ func (s *SpannerMigrator) ForceSchema(ctx context.Context, version int) error {
 	return nil
 }
 
+// EnsureMigrationsReader keeps the migrations reader role ([MigrationsReaderRole]) beside
+// both version tables: created when the database's DDL lacks it, granted select on each
+// table it does not hold yet, the tables created first when missing. Spanner's emulator
+// serves no roles, so the deploy's migrate program calls this against Spanner itself, not
+// in development or tests.
+func (s *SpannerMigrator) EnsureMigrationsReader(ctx context.Context) error {
+	for _, table := range []string{s.schemaMigrationsTable, s.dataMigrationsTable} {
+		if err := s.runner(table).EnsureReader(ctx); err != nil {
+			return errors.Wrapf(err, "runner.Spanner.EnsureReader(): %s", table)
+		}
+	}
+
+	return nil
+}
+
 // ForceData sets the data migrations table to a version, as [SpannerMigrator.ForceSchema]
 // does for the schema.
 func (s *SpannerMigrator) ForceData(ctx context.Context, version int) error {

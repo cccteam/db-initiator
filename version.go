@@ -11,3 +11,9 @@ type Version = runner.Version
 // is dirty with the applied part recorded, and the next run continues from the failed
 // statement once the cause is fixed. Test for it with errors.As.
 type DirtyError = runner.DirtyError
+
+// MigrationsReaderRole is the database role the migration runner keeps beside every
+// version table on Spanner, with select on that table alone (CREATE ROLE and GRANT SELECT
+// at the first run that finds it missing): a deploy identity of another environment,
+// given the role, reads where a database stands without reaching its data.
+const MigrationsReaderRole = runner.ReaderRole

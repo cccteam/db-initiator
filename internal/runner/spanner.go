@@ -475,6 +475,59 @@ func (s *Spanner) ensureTable(ctx context.Context) error {
 	return nil
 }
 
+// ReaderRole is the database role the runner keeps beside a version table on request,
+// with select on that table alone: a deploy identity of another environment reads where
+// a database stands without reaching its data, which is how a consolidated migration
+// sequence is refused until every environment's database is at the folded index.
+const ReaderRole = "migrations_reader"
+
+// EnsureReader creates the reader role when the database's DDL lacks it and grants it
+// select on the version table when the DDL holds no such grant, in one DDL batch, the
+// version table created first when it is missing. The role is read from the database's
+// DDL rather than the roles view, which the emulator does not serve; the emulator does
+// not serve roles either, so a caller runs this against Spanner itself.
+func (s *Spanner) EnsureReader(ctx context.Context) error {
+	if err := s.ensureTable(ctx); err != nil {
+		return err
+	}
+	current, err := s.admin.GetDatabaseDdl(ctx, &databasepb.GetDatabaseDdlRequest{Database: s.database})
+	if err != nil {
+		return errors.Wrap(err, "database.DatabaseAdminClient.GetDatabaseDdl()")
+	}
+	hasRole, hasGrant := false, false
+	for _, stmt := range current.GetStatements() {
+		words := strings.Fields(strings.ToLower(stmt))
+		statement := strings.Join(words, " ")
+		switch {
+		case statement == "create role "+ReaderRole:
+			hasRole = true
+		case strings.HasPrefix(statement, "grant select on table ") && strings.HasSuffix(statement, " to role "+ReaderRole) &&
+			strings.Contains(statement, strings.ToLower(s.table)):
+			hasGrant = true
+		}
+	}
+
+	var ddl []string
+	if !hasRole {
+		ddl = append(ddl, "CREATE ROLE "+ReaderRole)
+	}
+	if !hasGrant {
+		ddl = append(ddl, fmt.Sprintf("GRANT SELECT ON TABLE `%s` TO ROLE %s", s.table, ReaderRole))
+	}
+	if len(ddl) == 0 {
+		return nil
+	}
+	op, err := s.ddlBatch(ctx, ddl)
+	if err != nil {
+		return errors.Wrapf(err, "granting %s select on %s", ReaderRole, s.table)
+	}
+	if err := op.Wait(ctx); err != nil {
+		return errors.Wrapf(err, "granting %s select on %s: DDL operation %s", ReaderRole, s.table, op.Name())
+	}
+
+	return nil
+}
+
 // columns lists the version table's columns; none means the table does not exist.
 func (s *Spanner) columns(ctx context.Context) ([]string, error) {
 	stmt := spanner.Statement{

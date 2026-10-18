@@ -69,6 +69,14 @@ Spanner validates a DDL batch as a whole before applying anything, then applies 
 
 The run refuses, and says how to recover, when the file changed in its already-applied part (restore the file, or force a version) and when the database is dirty from a run that recorded no progress, as releases before 0.4 left it (force the version that matches the database's real state).
 
+#### Parity check
+
+`SpannerParity` (or `SpannerContainer.Parity` in a test) applies two migration sources, each a schema directory and optionally a data directory, to two fresh databases on an instance and compares what results: every DDL statement the database reports (`GetDatabaseDdl`, order aside, so a fold tidied by hand still passes) and every table's rows as values in primary-key order, with the version tables and the columns that take commit timestamps (`allow_commit_timestamp`) left out, since those are what a run itself writes. Both databases are dropped when the check ends. `ParityReport.Identical` says whether the two came out the same, and `Differences` names each statement one side lacks, each table one side lacks and each differing value by table, row key and column (twenty per table, then a count). It is the check a consolidated migration sequence is accepted by: the branch's sequence on one side, the folded file on the other, on the emulator in CI.
+
+#### Migrations reader role
+
+`EnsureMigrationsReader` keeps the database role `MigrationsReaderRole` (`migrations_reader`) beside both version tables, with select on those tables alone: created when the database's DDL lacks it, granted on each table it does not hold yet, the tables created first when missing, and nothing done when all three are in place. It is an explicit step for the deploy's migrate program, run against Spanner itself: an identity of another environment that holds the role reads where a database stands without reaching its data. The emulator accepts the role statements and keeps none, so the step runs cleanly in development and proves nothing there.
+
 ### PostgreSQL
 
 Each file runs inside one transaction under an advisory lock, with the version row replaced in the same transaction: a file that fails rolls back whole and the version stays where it was, never dirty. Two runners started together on one database apply every file once between them. Statements that cannot run inside a transaction, such as `CREATE INDEX CONCURRENTLY`, are not supported.
