@@ -55,7 +55,7 @@ func newSpannerDatabase(ctx context.Context, adminClient *spannerDB.DatabaseAdmi
 	op, err := adminClient.CreateDatabase(ctx,
 		&databasepb.CreateDatabaseRequest{
 			Parent:          fmt.Sprintf("projects/%s/instances/%s", projectID, instanceID),
-			CreateStatement: fmt.Sprintf("CREATE DATABASE `%s`", dbName),
+			CreateStatement: fmt.Sprintf("CREATE DATABASE %#q", dbName),
 		},
 	)
 	if err != nil {

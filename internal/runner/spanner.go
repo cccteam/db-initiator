@@ -452,11 +452,11 @@ func (s *Spanner) ensureTable(ctx context.Context) error {
 
 	var ddl []string
 	if len(columns) == 0 {
-		ddl = append(ddl, fmt.Sprintf("CREATE TABLE `%s` (Version INT64 NOT NULL, Dirty BOOL NOT NULL, Applied INT64, Checkpoint STRING(64), Operation STRING(MAX)) PRIMARY KEY (Version)", s.table))
+		ddl = append(ddl, fmt.Sprintf("CREATE TABLE %#q (Version INT64 NOT NULL, Dirty BOOL NOT NULL, Applied INT64, Checkpoint STRING(64), Operation STRING(MAX)) PRIMARY KEY (Version)", s.table))
 	} else {
 		for _, column := range progressColumns {
 			if !slices.Contains(columns, column.name) {
-				ddl = append(ddl, fmt.Sprintf("ALTER TABLE `%s` ADD COLUMN %s", s.table, column.ddl))
+				ddl = append(ddl, fmt.Sprintf("ALTER TABLE %#q ADD COLUMN %s", s.table, column.ddl))
 			}
 		}
 	}
@@ -500,7 +500,7 @@ func (s *Spanner) columns(ctx context.Context) ([]string, error) {
 
 // read returns the version row. No row, or the old library's -1 row, is no version.
 func (s *Spanner) read(ctx context.Context) (Version, error) {
-	stmt := spanner.Statement{SQL: fmt.Sprintf("SELECT %s FROM `%s` LIMIT 1", strings.Join([]string{columnVersion, columnDirty, columnApplied, columnCheckpoint, columnOperation}, ", "), s.table)}
+	stmt := spanner.Statement{SQL: fmt.Sprintf("SELECT %s FROM %#q LIMIT 1", strings.Join([]string{columnVersion, columnDirty, columnApplied, columnCheckpoint, columnOperation}, ", "), s.table)}
 	iter := s.client.Single().Query(ctx, stmt)
 	defer iter.Stop()
 
