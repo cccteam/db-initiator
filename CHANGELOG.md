@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/cccteam/db-initiator/compare/v0.4.3...v0.4.4) (2026-10-23)
+
+
+### Code Upgrade
+
+* **deps:** Go 1.27.3; crypto/x509 GO-2026-6809 fixed ([#206](https://github.com/cccteam/db-initiator/issues/206)) ([1da7f2d](https://github.com/cccteam/db-initiator/commit/1da7f2dcb212eea76f83a61a9b1c097cd94ed7ec))
+
 ## [0.4.3](https://github.com/cccteam/db-initiator/compare/v0.4.2...v0.4.3) (2026-10-09)
 
 
