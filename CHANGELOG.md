@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.5](https://github.com/cccteam/db-initiator/compare/v0.4.4...v0.4.5) (2026-11-13)
+
+
+### Bug Fixes
+
+* **deps:** resolve security scan findings ([#213](https://github.com/cccteam/db-initiator/issues/213)) ([6fbd42e](https://github.com/cccteam/db-initiator/commit/6fbd42ec0864efbb3a716d01054eecd176f9aa6f))
+
+
+### Code Upgrade
+
+* **deps:** bump the github-actions group across 1 directory with 4 updates ([#216](https://github.com/cccteam/db-initiator/issues/216)) ([d8b3d01](https://github.com/cccteam/db-initiator/commit/d8b3d01ab9c34874c15f755bdcf8406b7de86260))
+* **deps:** bump the go-dependencies group across 1 directory with 9 updates ([#215](https://github.com/cccteam/db-initiator/issues/215)) ([5031213](https://github.com/cccteam/db-initiator/commit/5031213b70f57aedb263b0c0c3b666622f28a420))
+
 ## [0.4.4](https://github.com/cccteam/db-initiator/compare/v0.4.3...v0.4.4) (2026-10-23)
 
 
